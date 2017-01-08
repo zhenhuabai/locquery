@@ -20,6 +20,10 @@ import java.util.logging.Logger;
  * Created by 白振华 on 2017/1/7.
  */
 public class LocQueryVerticle extends AbstractVerticle{
+    public LocQueryVerticle (){
+        super();
+        GlobeDataStore.getInstance();
+    }
     private final Logger Log = Logger.getLogger(this.getClass().getName());
     @Override
     public void start(Future<Void> fut) {
@@ -50,7 +54,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                             if (result.succeeded()) {
                                 fut.complete();
                                 Log.info("Serivce Started");
-                                pingService();
+                                //pingService();
                             } else {
                                 fut.fail(result.cause());
                             }
@@ -75,8 +79,8 @@ public class LocQueryVerticle extends AbstractVerticle{
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end(out.toString());
         }catch (Exception e){
-            e.printStackTrace();
-            Log.warning("Problem handling request:"+routingContext.request().toString());
+            //e.printStackTrace();
+            Log.warning("Problem handling request."+e.getMessage());
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end("Ooops, Error:( No info found for your input!");

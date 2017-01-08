@@ -28,9 +28,11 @@ public class CityQuery {
         Coordinate coord = new Coordinate( lat, lon );
         Point point = geometryFactory.createPoint( coord );
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2( null );
-        Filter filter = ff.contains( ff.property( "the_geom" ), ff.literal( point ) );
-        Query query = new Query(GlobeDataStore.getInstance().store.getTypeNames()[0], filter,
-                new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
+        //Filter filter = ff.contains( ff.property( "the_geom" ), ff.literal( point ) );
+        Filter filter = ff.contains( ff.property( "geom" ), ff.literal( point ) );
+        Query query = new Query("CHN_adm3", filter,
+                new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1",
+                        "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
         //Query query = new Query(GlobeDataStore.getInstance().store.getTypeNames()[0], filter);
         SimpleFeatureCollection features = GlobeDataStore.getInstance().featureSource.getFeatures(query);
         long end = System.currentTimeMillis();
@@ -45,11 +47,14 @@ public class CityQuery {
             try ( SimpleFeatureIterator iterator = features.features() ) {
                 while (iterator.hasNext()) {
                     SimpleFeature feature = iterator.next();
+                    Object nlname3 = feature.getAttribute("NL_NAME_3");
+                    String name3 = nlname3 != null?
+                            nlname3.toString()  : feature.getAttribute("NAME_3").toString();
                     result = new String[] {
                             feature.getAttribute("NAME_0").toString(),
                             feature.getAttribute("NAME_1").toString(),
                             feature.getAttribute("NAME_2").toString(),
-                            feature.getAttribute("NAME_3").toString(),
+                            name3,
                             feature.getAttribute("ID_0").toString(),
                             feature.getAttribute("ID_1").toString(),
                             feature.getAttribute("ID_2").toString(),

@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import locutil.GlobeDataStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +31,7 @@ public class LocQueryVerticleTest {
         try{
              socket = new ServerSocket(0);
              port = socket.getLocalPort();
-             System.out.println("port availabe is:"+port);
+             GlobeDataStore.getInstance();
         } catch (Exception e){
         } finally {
             if (socket != null) {
@@ -79,7 +80,7 @@ public class LocQueryVerticleTest {
     @Test
     public void testQueryCityErr(TestContext context) {
         final Async async = context.async();
-        vertx.createHttpClient().getNow(port, "localhost", "/api/city",
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lat=0&lon=0",
                 response -> {
                     response.handler(body -> {
                         context.assertTrue(body.toString().contains("Error"));
