@@ -1,0 +1,15 @@
+{
+  "http.port" : 8080,
+  "maps" : [
+    {"name": "China",
+      "outline": {
+        "windows": "c:\\gis\\maps\\CHN_adm0.shp",
+        "linux": "/opt/locquery/maps/CHN_adm0.shp"
+      },
+      "detail": {
+        "windows": "c:\\gis\\maps\\CHN_adm3.shp",
+        "linux": "/opt/locquery/maps/CHN_adm3.shp"
+      }
+    }
+  ]
+}

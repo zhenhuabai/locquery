@@ -45,6 +45,8 @@ public class CityQuery {
             try ( SimpleFeatureIterator iterator = features.features() ) {
                 while (iterator.hasNext()) {
                     SimpleFeature feature = iterator.next();
+                    String ln = feature.getAttribute("NL_NAME_3").toString();
+                    System.out.print("ln = "+ln);
                     result = new String[] {
                             feature.getAttribute("NAME_0").toString(),
                             feature.getAttribute("NAME_1").toString(),

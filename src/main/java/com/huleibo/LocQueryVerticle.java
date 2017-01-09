@@ -1,6 +1,7 @@
 package com.huleibo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import common.Config;
 import common.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -23,6 +24,7 @@ public class LocQueryVerticle extends AbstractVerticle{
     private final Logger Log = Logger.getLogger(this.getClass().getName());
     @Override
     public void start(Future<Void> fut) {
+        Config.getInstance().setConfig(null);
         int port = config().getInteger("http.port", 8080);
         Log.info("read port:"+port);
         // Create a router object.

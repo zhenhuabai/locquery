@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import java.net.ServerSocket;
 
 import static org.junit.Assert.*;
+import static sun.util.locale.provider.LocaleServiceProviderPool.config;
 
 /**
  * Created by 白振华 on 2017/1/7.
