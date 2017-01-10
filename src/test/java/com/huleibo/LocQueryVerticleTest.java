@@ -3,6 +3,9 @@ package com.huleibo;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.NetClient;
+import io.vertx.core.net.NetClientOptions;
+import io.vertx.core.net.NetSocket;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -46,6 +49,23 @@ public class LocQueryVerticleTest {
                 );
         vertx.deployVerticle(LocQueryVerticle.class.getName(),
                 context.asyncAssertSuccess());
+
+        NetClientOptions cloptions = new NetClientOptions().setConnectTimeout(10000);
+        NetClient client = vertx.createNetClient(cloptions);
+        client.connect(4321, "localhost", res -> {
+            if (res.succeeded()) {
+                System.out.println("Connected!");
+                NetSocket clsocket = res.result();
+
+                clsocket.handler(sck->{
+                    System.out.println(sck.toString());
+                });
+                clsocket.write("lat=1,lon=2");
+
+            } else {
+                System.out.println("Failed to connect: " + res.cause().getMessage());
+            }
+});
     }
 
     @After

@@ -6,13 +6,16 @@ import common.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.Json;
+import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import jdk.nashorn.internal.parser.JSONParser;
 import locsvc.CityQuery;
 import locutil.GlobeDataStore;
 import org.apache.commons.io.output.StringBuilderWriter;
+import org.json.simple.JSONObject;
 
 import java.io.StringWriter;
 import java.util.logging.Logger;
@@ -22,8 +25,44 @@ import java.util.logging.Logger;
  */
 public class LocQueryVerticle extends AbstractVerticle{
     private final Logger Log = Logger.getLogger(this.getClass().getName());
+
+    private boolean mapservermode = true;
     @Override
     public void start(Future<Void> fut) {
+        if(mapservermode){
+            NetServer server = vertx.createNetServer();
+            server.connectHandler(socket -> {
+                socket.handler(buffer -> {
+                    StringWriter out = new StringWriter();
+                    String params = buffer.toString();
+                    System.out.println("Recieved:"+params);
+                    /*
+                    JSONObject jo = new JSONObject(params);
+                    String lat = jo.get("lat").toString();
+                    String lon = jo.get("lon").toString();
+                    double la = Double.valueOf(lat);
+                    double lo = Double.valueOf(lon);
+                    */
+                    double la=0, lo=0;
+                    try {
+                        LocInfo li = GlobeDataStore.getInstance().findCityDirect(la, lo);
+                        ObjectMapper om = new ObjectMapper();
+                        om.writeValue(out, li.data);
+                        socket.write("this is ");
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                });
+            });
+            server.listen(4321, "localhost", res -> {
+                if (res.succeeded()) {
+                    System.out.println("Map Server is now listening!");
+                } else {
+                    System.out.println("Failed to bind!");
+                }
+            });
+            return;
+        }
         int port = config().getInteger("http.port", 8080);
         Log.info("read port:"+port);
         // Create a router object.
@@ -39,7 +78,6 @@ public class LocQueryVerticle extends AbstractVerticle{
         router.route("/api/city*").handler(BodyHandler.create());
         router.get("/api/city").handler(this::queryCity);
 
-        // Create the HTTP server and pass the "accept" method to the request handler.
         vertx
                 .createHttpServer()
                 .requestHandler(router::accept)
