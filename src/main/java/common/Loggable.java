@@ -7,7 +7,8 @@ import java.util.logging.Logger;
  */
 public abstract class Loggable {
     protected Logger Log = null;
-    public Loggable(){
+    public Loggable()
+    {
         Log = Logger.getLogger(this.getClass().getName());
     }
 }
