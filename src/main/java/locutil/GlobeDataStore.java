@@ -51,10 +51,15 @@ public final class GlobeDataStore extends Loggable{
             String name = map.get("name").toString();
             String path1 = map.get("outline").toString();
             String path2 = map.get("detail").toString();
+            JSONArray jsobj = (JSONArray)map.get("columns");
+            String[] cols = new String[jsobj.size()];
+            jsobj.toArray(cols);
+            Log.info("json="+jsobj.toString());
+            //String[] cols = {"name_0","name_1"};//(JSONArray)map.get("columns");
             Log.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
             outline = loadDataStore(path1);
             detail = loadDataStore(path2);
-            loadedMap.add(new CountryMapData(name, outline, detail));
+            loadedMap.add(new CountryMapData(name, outline, detail, cols));
             Log.info(String.format("Map %s installed\n", name));
         }
         long end = System.currentTimeMillis();
@@ -100,14 +105,16 @@ public final class GlobeDataStore extends Loggable{
     public LocInfo findCityDirect(double lat, double lon){
         long start = System.currentTimeMillis();
         LocInfo loc = null;
+        loc = loadedMap.get(0).getCityDirect(lat,lon);
+        /*
         for(  CountryMapData d : loadedMap){
             loc = d.getCityDirect(lat, lon);
             if (loc != null){
                 break;
             }
-        }
+        }*/
         long end = System.currentTimeMillis();
-        Log.info(String.format("Direct searching [%f, %f] took %d seconds\n", lat, lon, end - start));
+        Log.info(String.format("Direct searching [%f, %f] took %d ms\n", lat, lon, end - start));
         return loc;
     }
     public LocInfo findCity(double lat, double lon){
@@ -120,7 +127,7 @@ public final class GlobeDataStore extends Loggable{
             }
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("Searching [%f, %f] took %d seconds\n", lat, lon, end - start));
+        Log.info(String.format("Searching [%f, %f] took %d ms\n", lat, lon, end - start));
         return loc;
     }
 

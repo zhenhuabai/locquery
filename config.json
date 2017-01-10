@@ -11,7 +11,8 @@
         "windows": "c:\\gis\\maps\\CHN_adm3.shp",
         "linux": "/opt/locquery/maps/CHN_adm3.shp",
         "mac": "/Users/dbai/Downloads/gis/CHN_adm3.shp"
-      }
+      },
+      "columns": ["NAME_0", "NAME_1", "NAME_2", "NAME_3"]
     }
   ]
 }

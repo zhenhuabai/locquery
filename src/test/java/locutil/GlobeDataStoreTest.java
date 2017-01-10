@@ -17,18 +17,22 @@ public class GlobeDataStoreTest {
     @Test
     public void findCity(){
         long start = System.currentTimeMillis();
-        GlobeDataStore.getInstance().findCity(118.848166, 32.40064);
+        LocInfo res = GlobeDataStore.getInstance().findCity(118.848166, 32.40064);
+        res.print();
         GlobeDataStore.getInstance().findCity(109.594513,34.644989);
+        res.print();
         long time = System.currentTimeMillis() - start;
-        System.out.println("Takes "+time);
+        System.out.println("Takes "+time+" ms");
     }
 
     @Test
     public void findCityDirect(){
         long start = System.currentTimeMillis();
-        GlobeDataStore.getInstance().findCityDirect(118.848166, 32.40064);
-        GlobeDataStore.getInstance().findCityDirect(109.594513,34.644989);
+        LocInfo res = GlobeDataStore.getInstance().findCityDirect(118.848166, 32.40064);
+        res.print();
+        res = GlobeDataStore.getInstance().findCityDirect(109.594513,34.644989);
+        res.print();
         long time = System.currentTimeMillis() - start;
-        System.out.println("Takes "+time);
+        System.out.println("Takes "+time+" ms");
     }
 }

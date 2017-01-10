@@ -23,10 +23,12 @@ public class CountryMapData extends Loggable{
     DataStore outlineMap = null;
     DataStore detailMap = null;
     String name = null;
-    CountryMapData(String name, DataStore out, DataStore detail){
+    String[] columns = null;
+    CountryMapData(String name, DataStore out, DataStore detail, String[] cols){
         this.name = name;
         outlineMap = out;
         detailMap = detail;
+        columns = cols;
     }
     boolean contains (double lat, double lon){
         long start = System.currentTimeMillis();
@@ -61,7 +63,8 @@ public class CountryMapData extends Loggable{
         SimpleFeatureCollection features;
         try {
             Query query = new Query(detailMap.getTypeNames()[0], filter,
-                    new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
+                    columns);
+                    //new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
             features = detailMap.getFeatureSource(detailMap.getTypeNames()[0]).getFeatures(query);
             if (features.size() < 1){
                 Log.severe("Map data not consistent!");
@@ -72,16 +75,10 @@ public class CountryMapData extends Loggable{
                 try (SimpleFeatureIterator iterator = features.features()) {
                     while (iterator.hasNext()) {
                         SimpleFeature feature = iterator.next();
-                        String[] result = new String[]{
-                                feature.getAttribute("NAME_0").toString(),
-                                feature.getAttribute("NAME_1").toString(),
-                                feature.getAttribute("NAME_2").toString(),
-                                feature.getAttribute("NAME_3").toString(),
-                                feature.getAttribute("ID_0").toString(),
-                                feature.getAttribute("ID_1").toString(),
-                                feature.getAttribute("ID_2").toString(),
-                                feature.getAttribute("ID_3").toString()
-                        };
+                        String[] result = new String[columns.length];
+                        for (int i = 0; i < result.length; i++) {
+                            result[i] = feature.getAttribute(columns[i]).toString();
+                        }
                         retInfo = new LocInfo(result);
                         break; //Get the first
                     }
@@ -110,7 +107,7 @@ public class CountryMapData extends Loggable{
             if (features.size() > 0){
                 Log.info(String.format("[%f, %f] found in map %s\n",lat, lon, name));
                 query = new Query(detailMap.getTypeNames()[0], filter,
-                        new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
+                        columns);
                 features = detailMap.getFeatureSource(detailMap.getTypeNames()[0]).getFeatures(query);
                 if (features.size() < 1){
                     Log.severe("Map data not consistent!");
@@ -121,16 +118,10 @@ public class CountryMapData extends Loggable{
                     try (SimpleFeatureIterator iterator = features.features()) {
                         while (iterator.hasNext()) {
                             SimpleFeature feature = iterator.next();
-                            String[] result = new String[]{
-                                    feature.getAttribute("NAME_0").toString(),
-                                    feature.getAttribute("NAME_1").toString(),
-                                    feature.getAttribute("NAME_2").toString(),
-                                    feature.getAttribute("NAME_3").toString(),
-                                    feature.getAttribute("ID_0").toString(),
-                                    feature.getAttribute("ID_1").toString(),
-                                    feature.getAttribute("ID_2").toString(),
-                                    feature.getAttribute("ID_3").toString()
-                            };
+                            String[] result = new String[columns.length];
+                            for (int i = 0; i < result.length; i++) {
+                                result[i] = feature.getAttribute(columns[i]).toString();
+                            }
                             retInfo = new LocInfo(result);
                             break; //Get the first
                         }

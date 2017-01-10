@@ -29,6 +29,7 @@ public class Config extends Loggable{
             JSONParser parser = new JSONParser();
             try {
                 config = (JSONObject)parser.parse(new FileReader("./config.json"));
+                Log.info("Result:"+config.toJSONString());
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -41,16 +42,29 @@ public class Config extends Loggable{
         JSONArray jsar = new JSONArray();
         if (config != null){
             jsa = (JSONArray)((JSONArray)config.get("maps")).clone();
-            switch(OsCheck.getOperatingSystemType() ){
-               case MacOS:
-                   for (int i = 0; i < jsa.size(); i++) {
-                       jo.clear();
-                       jo.put("outline", ((JSONObject)(((JSONObject)jsa.get(i)).get("outline"))).get("mac").toString());
-                       jo.put("detail", ((JSONObject)(((JSONObject)jsa.get(i)).get("detail"))).get("mac").toString());
-                       jo.put("name",((JSONObject)jsa.get(i)).get("name"));
-                       jsar.add(jo.clone());
-                   }
-           }
+            String sys = null;
+            switch(OsCheck.getOperatingSystemType() ) {
+                case MacOS:
+                    sys = "mac";
+                    break;
+                case Linux:
+                    sys = "linux";
+                    break;
+                case Windows:
+                    sys = "windows";
+                    break;
+                default:
+                    sys = "windows";
+                    break;
+            }
+            for (int i = 0; i < jsa.size(); i++) {
+                jo.clear();
+                jo.put("outline", ((JSONObject)(((JSONObject)jsa.get(i)).get("outline"))).get(sys).toString());
+                jo.put("detail", ((JSONObject)(((JSONObject)jsa.get(i)).get("detail"))).get(sys).toString());
+                jo.put("name",((JSONObject)jsa.get(i)).get("name"));
+                jo.put("columns",((JSONObject)jsa.get(i)).get("columns"));
+                jsar.add(jo.clone());
+            }
         }
         Log.info("Result:"+jsar.toJSONString());
         return jsar;
