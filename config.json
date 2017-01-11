@@ -1,6 +1,19 @@
 {
   "http.port" : 8080,
   "maps" : [
+    {"name": "USA",
+      "outline": {
+        "windows": "c:\\gis\\maps\\USA_adm0.shp",
+        "linux": "/opt/locquery/maps/USA_adm0.shp",
+        "mac": "/Users/dbai/Downloads/gis/USA_adm0.shp"
+      },
+      "detail": {
+        "windows": "c:\\gis\\maps\\USA_adm2.shp",
+        "linux": "/opt/locquery/maps/USA_adm2.shp",
+        "mac": "/Users/dbai/Downloads/gis/USA_adm2.shp"
+      },
+      "columns": ["NAME_0", "NAME_1", "NAME_2"]
+    },
     {"name": "China",
       "outline": {
         "windows": "c:\\gis\\maps\\CHN_adm0.shp",

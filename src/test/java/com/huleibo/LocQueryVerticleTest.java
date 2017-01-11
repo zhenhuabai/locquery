@@ -43,29 +43,12 @@ public class LocQueryVerticleTest {
             };
         }
 
-        port = 8080;
+        port = 18080;
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("http.port", port)
                 );
-        vertx.deployVerticle(LocQueryVerticle.class.getName(),
+        vertx.deployVerticle(LocQueryVerticle.class.getName(), options,
                 context.asyncAssertSuccess());
-
-        NetClientOptions cloptions = new NetClientOptions().setConnectTimeout(10000);
-        NetClient client = vertx.createNetClient(cloptions);
-        client.connect(4321, "localhost", res -> {
-            if (res.succeeded()) {
-                System.out.println("Connected!");
-                NetSocket clsocket = res.result();
-
-                clsocket.handler(sck->{
-                    System.out.println(sck.toString());
-                });
-                clsocket.write("lat=1,lon=2");
-
-            } else {
-                System.out.println("Failed to connect: " + res.cause().getMessage());
-            }
-});
     }
 
     @After

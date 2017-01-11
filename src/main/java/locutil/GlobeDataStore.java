@@ -1,27 +1,15 @@
 package locutil;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import common.Config;
-import common.LocInfo;
 import common.Loggable;
-import common.OsCheck;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.Layer;
-import org.geotools.map.MapContent;
-import org.geotools.styling.SLD;
-import org.geotools.styling.Style;
-import org.geotools.swing.JMapFrame;
-import org.geotools.swing.data.JFileDataStoreChooser;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -70,6 +58,38 @@ public final class GlobeDataStore extends Loggable{
             instance = new GlobeDataStore();
         }
         return instance;
+    }
+    public static GlobeDataStore getInstance(String mapname){
+        if (instance == null){
+            instance = new GlobeDataStore(mapname);
+        }
+        return instance;
+    }
+    private GlobeDataStore(String storename){
+        super();
+        Log.info("Single map service mode");
+        DataStore outline, detail;
+        long start = System.currentTimeMillis();
+        JSONArray maps = Config.getInstance().getMapConfig();
+        for (int i = 0; i < maps.size(); i++) {
+            JSONObject map = (JSONObject)maps.get(i);
+            String name = map.get("name").toString();
+            if(name.equals(storename)) {
+                String path1 = map.get("outline").toString();
+                String path2 = map.get("detail").toString();
+                JSONArray jsobj = (JSONArray) map.get("columns");
+                String[] cols = new String[jsobj.size()];
+                jsobj.toArray(cols);
+                Log.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
+                outline = loadDataStore(path1);
+                detail = loadDataStore(path2);
+                loadedMap.add(new CountryMapData(name, outline, detail, cols));
+                Log.info(String.format("Map %s installed\n", name));
+                break;
+            }
+        }
+        long end = System.currentTimeMillis();
+        Log.info(String.format("%d seconds took loading map data\n", (end - start)/1000));
     }
     private DataStore loadDataStore(String filename){
         store = null;

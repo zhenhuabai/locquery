@@ -1,6 +1,7 @@
-package common;
+package locutil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import common.Loggable;
 
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -10,7 +11,7 @@ import java.util.Map;
 /**
  * Created by 白振华 on 2017/1/7.
  */
-public class LocInfo extends Loggable{
+public class LocInfo extends Loggable {
     public Map<String, String> data = new LinkedHashMap<String, String>();
     private String[] adms = {"country", "province", "city", "county"};
     private String[] values;

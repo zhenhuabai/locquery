@@ -1,22 +1,16 @@
 package com.huleibo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import common.Config;
-import common.LocInfo;
+import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.net.NetServer;
-import io.vertx.core.net.NetServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import jdk.nashorn.internal.parser.JSONParser;
 import locsvc.CityQuery;
-import locutil.GlobeDataStore;
-import org.apache.commons.io.output.StringBuilderWriter;
-import org.json.simple.JSONObject;
 
+import java.io.File;
 import java.io.StringWriter;
 import java.util.logging.Logger;
 
@@ -24,45 +18,17 @@ import java.util.logging.Logger;
  * Created by 白振华 on 2017/1/7.
  */
 public class LocQueryVerticle extends AbstractVerticle{
+   File s = new File(LocQueryVerticle.class.getProtectionDomain()
+  .getCodeSource()
+  .getLocation()
+  .getPath());
+
     private final Logger Log = Logger.getLogger(this.getClass().getName());
 
-    private boolean mapservermode = true;
+    public static boolean mapservermode = false;
     @Override
     public void start(Future<Void> fut) {
-        if(mapservermode){
-            NetServer server = vertx.createNetServer();
-            server.connectHandler(socket -> {
-                socket.handler(buffer -> {
-                    StringWriter out = new StringWriter();
-                    String params = buffer.toString();
-                    System.out.println("Recieved:"+params);
-                    /*
-                    JSONObject jo = new JSONObject(params);
-                    String lat = jo.get("lat").toString();
-                    String lon = jo.get("lon").toString();
-                    double la = Double.valueOf(lat);
-                    double lo = Double.valueOf(lon);
-                    */
-                    double la=0, lo=0;
-                    try {
-                        LocInfo li = GlobeDataStore.getInstance().findCityDirect(la, lo);
-                        ObjectMapper om = new ObjectMapper();
-                        om.writeValue(out, li.data);
-                        socket.write("this is ");
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-                });
-            });
-            server.listen(4321, "localhost", res -> {
-                if (res.succeeded()) {
-                    System.out.println("Map Server is now listening!");
-                } else {
-                    System.out.println("Failed to bind!");
-                }
-            });
-            return;
-        }
+        System.out.println("s="+s.getName());
         int port = config().getInteger("http.port", 8080);
         Log.info("read port:"+port);
         // Create a router object.

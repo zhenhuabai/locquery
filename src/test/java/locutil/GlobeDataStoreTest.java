@@ -1,10 +1,6 @@
 package locutil;
 
-import common.LocInfo;
 import org.junit.Test;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by dbai on 10/01/2017.
