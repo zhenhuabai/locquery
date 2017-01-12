@@ -49,6 +49,12 @@ public class LocQueryVerticleTest {
                 );
         vertx.deployVerticle(LocQueryVerticle.class.getName(), options,
                 context.asyncAssertSuccess());
+
+        options = new DeploymentOptions()
+                .setConfig(new JsonObject().put("debug", 1)
+                );
+        vertx.deployVerticle(CountryMapServer.class.getName(), options,
+                context.asyncAssertSuccess());
     }
 
     @After

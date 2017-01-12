@@ -2,6 +2,7 @@ package com.huleibo;
 
 import common.Config;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.net.NetServer;
@@ -19,6 +20,7 @@ public class CountryMapServer extends AbstractVerticle{
     private int port;
     private String mappath;
     public static boolean inDebug = false;
+    private EventBus eb;
 
     static public void main(String[] args){
         Vertx vertxx = Vertx.vertx();
@@ -60,6 +62,27 @@ public class CountryMapServer extends AbstractVerticle{
     @Override
     public void start() throws Exception {
         setupEnv();
+        eb = vertx.eventBus();
+        eb.consumer("Server:"+mappath, message -> {
+            String[] loc = message.body().toString().split(",");
+            Log.info(String.format("[%s, %s]", loc[0], loc[1]));
+            double lat, lon;
+            try {
+                lat = new Double(loc[0]);
+                lon = new Double(loc[1]);
+                LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
+                if (li != null) {
+                    Log.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
+                    message.reply(li.toString());
+                } else {
+                    message.reply("{}");
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+                message.reply("{}");
+            }
+        });
+        /*
         NetServer server = vertx.createNetServer();
         server.connectHandler(socket -> {
             socket.handler(buffer -> {
@@ -85,5 +108,6 @@ public class CountryMapServer extends AbstractVerticle{
             });
         });
         server.listen(port, "localhost");
+        */
     }
 }

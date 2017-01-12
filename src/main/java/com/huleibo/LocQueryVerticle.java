@@ -1,6 +1,7 @@
 package com.huleibo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.eventbus.EventBus;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -26,9 +27,11 @@ public class LocQueryVerticle extends AbstractVerticle{
     private final Logger Log = Logger.getLogger(this.getClass().getName());
 
     public static boolean mapservermode = false;
+    private EventBus eb;
     @Override
     public void start(Future<Void> fut) {
         System.out.println("s="+s.getName());
+        eb = vertx.eventBus();
         int port = config().getInteger("http.port", 8080);
         Log.info("read port:"+port);
         // Create a router object.
@@ -42,7 +45,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                     .end("<h1>Hello, thanks for visiting, still under construction</h1>");
         });
         router.route("/api/city*").handler(BodyHandler.create());
-        router.get("/api/city").handler(this::queryCity);
+        router.get("/api/city").handler(this::remoteQueryCity);
 
         vertx
                 .createHttpServer()
@@ -61,6 +64,42 @@ public class LocQueryVerticle extends AbstractVerticle{
                             }
                         }
                 );
+    }
+    private void remoteQueryCity(RoutingContext routingContext) {
+         LocInfo loc = null;
+        StringWriter out = new StringWriter();
+        try {
+            Log.info("Handling request:" + routingContext.request().toString());
+            String lat = routingContext.request().getParam("lat").toString();
+            String lon = routingContext.request().getParam("lon").toString();
+
+            if(lat != null && lon != null && !lat.isEmpty() && !lon.isEmpty()) {
+                //TODO: hardcoded map server so far
+                StringBuffer sb = new StringBuffer();
+                sb.append(lat.trim()).append(",").append(lon.trim());
+                eb.send("Server:China",sb.toString(), reply -> {
+                    if (reply.succeeded()) {
+                        Log.info(String.format("[%s, %s]->%s", lat, lon, reply.result().body().toString()));
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    } else {
+                        Log.warning("Server no reply for:"+sb);
+                    }
+                });
+            }else{
+                Log.warning("Illegal parameters");
+                routingContext.response()
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end("Illegal parameter!");
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            Log.warning("Problem handling request:"+routingContext.request().toString());
+            routingContext.response()
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end("Ooops, Error:( No info found for your input!");
+        }
     }
     private void queryCity(RoutingContext routingContext) {
         LocInfo loc = null;

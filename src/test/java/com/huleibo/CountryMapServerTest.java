@@ -5,6 +5,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
@@ -50,6 +51,19 @@ public class CountryMapServerTest {
     public void start() throws Exception {
         Object waiter = new Object();
         boolean finished = false;
+        EventBus eb = vertx.eventBus();
+        vertx.setPeriodic(1000, v -> {
+
+            eb.send("Server:China", "118.83,32.41", reply -> {
+                if (reply.succeeded()) {
+                    System.out.println("Received reply " + reply.result().body());
+                } else {
+                    System.out.println("No reply");
+                }
+            });
+
+        });
+        /*
         NetClient client= vertx.createNetClient();
         client.connect(18080, "localhost", res -> {
             if (res.succeeded()) {
@@ -65,12 +79,14 @@ public class CountryMapServerTest {
                 System.out.println("Failed to connect: " + res.cause().getMessage());
             }
         });
+
         //The wait is to give client time to run, when the start() finishes,
         // the port test case is finished too before the client&server have time
         //chat
 
-        Thread.sleep(10000);
         client.close();
+        */
+        Thread.sleep(10000);
     }
 
 }
