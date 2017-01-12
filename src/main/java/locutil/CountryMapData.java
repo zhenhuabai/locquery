@@ -3,7 +3,8 @@ package locutil;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import common.Loggable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -17,7 +18,8 @@ import org.opengis.filter.FilterFactory2;
 /**
  * Created by dbai on 10/01/2017.
  */
-public class CountryMapData extends Loggable{
+public class CountryMapData{
+    private static final Logger logger = LogManager.getLogger(CountryMapData.class);
     DataStore outlineMap = null;
     DataStore detailMap = null;
     String name = null;
@@ -40,14 +42,14 @@ public class CountryMapData extends Loggable{
             Query query = new Query(outlineMap.getTypeNames()[0], filter, new String[]{"ID_0"});
             SimpleFeatureCollection features = outlineMap.getFeatureSource(outlineMap.getTypeNames()[0]).getFeatures(query);
             if (features.size() > 0){
-                Log.info(String.format("[%d, %d] found in %s\n",lat, lon, name));
+                logger.info(String.format("[%d, %d] found in %s\n",lat, lon, name));
                 yes = true;
             }
         } catch (Exception e){
             e.printStackTrace();
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("[%f, %f] Outline query takes: %dms", lat, lon, end - start));
+        logger.info(String.format("[%f, %f] Outline query takes: %dms", lat, lon, end - start));
         return yes;
     }
     public LocInfo getCityDirect(double lat, double lon) {
@@ -65,10 +67,10 @@ public class CountryMapData extends Loggable{
                     //new String[] { "ID_0", "ID_1", "ID_2", "ID_3", "NAME_0", "NAME_1", "NAME_2", "NAME_3", "ENGTYPE_3", "VARNAME_3", "NL_NAME_3"});
             features = detailMap.getFeatureSource(detailMap.getTypeNames()[0]).getFeatures(query);
             if (features.size() < 1){
-                Log.severe("Map data not consistent!");
+                logger.error("Map data not consistent!");
             } else {
                 if (features.size() > 1) {
-                    Log.warning("Wrong map boundary");
+                    logger.warn("Wrong map boundary");
                 }
                 try (SimpleFeatureIterator iterator = features.features()) {
                     while (iterator.hasNext()) {
@@ -86,7 +88,7 @@ public class CountryMapData extends Loggable{
             e.printStackTrace();
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("[%f, %f] detail direct query takes: %dms", lat, lon, end - start));
+        logger.info(String.format("[%f, %f] detail direct query takes: %dms", lat, lon, end - start));
         return retInfo;
     }
     public LocInfo getCity(double lat, double lon)
@@ -103,15 +105,15 @@ public class CountryMapData extends Loggable{
             Query query = new Query(outlineMap.getTypeNames()[0], filter, new String[]{"NAME_ISO"});
             features = outlineMap.getFeatureSource(outlineMap.getTypeNames()[0]).getFeatures(query);
             if (features.size() > 0){
-                Log.info(String.format("[%f, %f] found in map %s\n",lat, lon, name));
+                logger.info(String.format("[%f, %f] found in map %s\n",lat, lon, name));
                 query = new Query(detailMap.getTypeNames()[0], filter,
                         columns);
                 features = detailMap.getFeatureSource(detailMap.getTypeNames()[0]).getFeatures(query);
                 if (features.size() < 1){
-                    Log.severe("Map data not consistent!");
+                    logger.error("Map data not consistent!");
                 } else {
                     if (features.size() > 1) {
-                        Log.warning("Wrong map boundary");
+                        logger.warn("Wrong map boundary");
                     }
                     try (SimpleFeatureIterator iterator = features.features()) {
                         while (iterator.hasNext()) {
@@ -126,13 +128,13 @@ public class CountryMapData extends Loggable{
                     }
                 }
             } else {
-                Log.info(String.format("[%d, %d] NOT found in map %s\n",lat, lon, name));
+                logger.info(String.format("[%d, %d] NOT found in map %s\n",lat, lon, name));
             }
         } catch (Exception e){
             e.printStackTrace();
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("[%f, %f] detail query takes: %dms", lat, lon, end - start));
+        logger.info(String.format("[%f, %f] detail query takes: %dms", lat, lon, end - start));
         return retInfo;
     }
 }

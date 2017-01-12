@@ -1,24 +1,22 @@
 package com.huleibo;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.NetClient;
-import io.vertx.core.net.NetSocket;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.lang.reflect.Field;
-import java.net.ServerSocket;
-import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -48,15 +46,26 @@ public class CountryMapServerTest {
     }
 
     @Test
-    public void start() throws Exception {
+    public void start(TestContext context) throws Exception {
+        final Async async = context.async();
         Object waiter = new Object();
         boolean finished = false;
         EventBus eb = vertx.eventBus();
-        vertx.setPeriodic(1000, v -> {
+        vertx.setTimer(1000, v ->{
+        //vertx.setPeriodic(1000, v -> {
+
 
             eb.send("Server:China", "118.83,32.41", reply -> {
                 if (reply.succeeded()) {
-                    System.out.println("Received reply " + reply.result().body());
+                    JSONParser jp = new JSONParser();
+                    try {
+                        JSONObject jo = (JSONObject)jp.parse(reply.result().body().toString());
+                        context.assertEquals("China", jo.get("country"));
+                        System.out.println("Received reply " + reply.result().body());
+                        async.complete();
+                    }catch (Exception e){
+                        System.out.println("Problem getting data");
+                    };
                 } else {
                     System.out.println("No reply");
                 }
@@ -85,8 +94,8 @@ public class CountryMapServerTest {
         //chat
 
         client.close();
-        */
         Thread.sleep(10000);
+        */
     }
 
 }

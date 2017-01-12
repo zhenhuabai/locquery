@@ -1,5 +1,6 @@
 package com.huleibo;
 
+import common.Config;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -29,21 +30,7 @@ public class LocQueryVerticleTest {
     @Before
     public void setUp(TestContext context) {
         vertx = Vertx.vertx();
-        ServerSocket socket = null;
-        try{
-             socket = new ServerSocket(0);
-             port = socket.getLocalPort();
-             System.out.println("port availabe is:"+port);
-        } catch (Exception e){
-        } finally {
-            if (socket != null) {
-                try{
-                    socket.close();
-                }catch(Exception ee){}
-            };
-        }
-
-        port = 18080;
+        port = Integer.valueOf(Config.getInstance().getConfig().get("http.port").toString());
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("http.port", port)
                 );

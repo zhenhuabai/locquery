@@ -4,13 +4,17 @@ import io.vertx.core.json.JsonObject;
 
 import java.io.FileReader;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 /**
  * Created by 白振华 on 2017/1/9.
  */
-public class Config extends Loggable{
+public class Config{
+
+    private static final Logger logger = LogManager.getLogger(Config.class);
     private static Config ourInstance = new Config();
 
     public static Config getInstance() {
@@ -29,7 +33,7 @@ public class Config extends Loggable{
             JSONParser parser = new JSONParser();
             try {
                 config = (JSONObject)parser.parse(new FileReader("./config.json"));
-                Log.info("Result:"+config.toJSONString());
+                logger.info("Result:"+config.toJSONString());
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -66,7 +70,7 @@ public class Config extends Loggable{
                 jsar.add(jo.clone());
             }
         }
-        Log.info("Result:"+jsar.toJSONString());
+        logger.info("Result:"+jsar.toJSONString());
         return jsar;
     }
 }

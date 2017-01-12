@@ -5,13 +5,14 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.net.NetServer;
 import locutil.GlobeDataStore;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.util.Map;
-import java.util.logging.Logger;
+//import java.util.logging.Logger;
 
 /**
  * Created by 白振华 on 2017/1/11.
@@ -21,12 +22,12 @@ public class CountryMapServer extends AbstractVerticle{
     private String mappath;
     public static boolean inDebug = false;
     private EventBus eb;
-
+    private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
+    //Logger Log = Logger.getLogger(this.getClass().getName());
     static public void main(String[] args){
         Vertx vertxx = Vertx.vertx();
         vertxx.deployVerticle(CountryMapServer.class.getName());
     }
-    Logger Log = Logger.getLogger(this.getClass().getName());
     private void setupEnv(){
         int dbg = config().getInteger("debug",0);
         if(dbg == 1) {
@@ -41,23 +42,17 @@ public class CountryMapServer extends AbstractVerticle{
         }else{
             Map<String, String> env = System.getenv();
             try {
-                String ports = env.get("port").toString();
-                if (ports == null || ports.isEmpty()) {
-                    Log.severe("No port defined, exit");
-                    System.exit(1000);
-                }
-                port = Integer.valueOf(ports);
                 mappath = env.get("map");
                 if (mappath == null || mappath.isEmpty()) {
-                    Log.severe("No map, exit");
+                    logger.error("No map, exit");
                     System.exit(1001);
                 }
             }catch (Exception e){
-                Log.severe("Error getting params");
+                logger.error("Error getting params");
                 System.exit(3);
             }
         }
-        Log.info("Map["+mappath+"] will service in "+port);
+        logger.info("Map["+mappath+"] will be serviced");
     }
     @Override
     public void start() throws Exception {
@@ -65,14 +60,14 @@ public class CountryMapServer extends AbstractVerticle{
         eb = vertx.eventBus();
         eb.consumer("Server:"+mappath, message -> {
             String[] loc = message.body().toString().split(",");
-            Log.info(String.format("[%s, %s]", loc[0], loc[1]));
+            logger.info(String.format("[%s, %s]", loc[0], loc[1]));
             double lat, lon;
             try {
                 lat = new Double(loc[0]);
                 lon = new Double(loc[1]);
                 LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
                 if (li != null) {
-                    Log.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
+                    logger.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
                     message.reply(li.toString());
                 } else {
                     message.reply("{}");
@@ -82,32 +77,5 @@ public class CountryMapServer extends AbstractVerticle{
                 message.reply("{}");
             }
         });
-        /*
-        NetServer server = vertx.createNetServer();
-        server.connectHandler(socket -> {
-            socket.handler(buffer -> {
-                //strict check should be performed outside!!!
-                String s = buffer.toString();
-                Log.info("received: " + s);
-                String ds[] = s.split(",");
-                double lon, lat;
-                try {
-                    lat = new Double(ds[0]);
-                    lon = new Double(ds[1]);
-                    LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
-                    if (li != null) {
-                        Log.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
-                        socket.write(li.toString());
-                    } else {
-                        socket.write("{}");
-                    }
-                }catch (Exception e){
-                    e.printStackTrace();
-                    socket.write("{}");
-                }
-            });
-        });
-        server.listen(port, "localhost");
-        */
     }
 }

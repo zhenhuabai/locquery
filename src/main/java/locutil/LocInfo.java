@@ -1,17 +1,18 @@
 package locutil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import common.Loggable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.StringWriter;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Created by 白振华 on 2017/1/7.
  */
-public class LocInfo extends Loggable {
+public class LocInfo {
+    private static final Logger logger = LogManager.getLogger(LocInfo.class);
     public Map<String, String> data = new LinkedHashMap<String, String>();
     private String[] adms = {"country", "province", "city", "county"};
     private String[] values;
@@ -42,7 +43,6 @@ public class LocInfo extends Loggable {
         }catch (Exception e){
             e.printStackTrace();
         }
-        Log.info(out.toString());
-
+        logger.info(out.toString());
     }
 }

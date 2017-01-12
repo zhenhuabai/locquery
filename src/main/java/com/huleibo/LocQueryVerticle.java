@@ -1,6 +1,7 @@
 package com.huleibo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import common.Config;
 import io.vertx.core.eventbus.EventBus;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
@@ -10,34 +11,35 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import locsvc.CityQuery;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.StringWriter;
-import java.util.logging.Logger;
 
 /**
  * Created by 白振华 on 2017/1/7.
  */
 public class LocQueryVerticle extends AbstractVerticle{
-   File s = new File(LocQueryVerticle.class.getProtectionDomain()
-  .getCodeSource()
-  .getLocation()
-  .getPath());
+    private static final Logger logger = LogManager.getLogger(LocQueryVerticle.class);
+    //private final Logger Log = Logger.getLogger(this.getClass().getName());
 
-    private final Logger Log = Logger.getLogger(this.getClass().getName());
-
-    public static boolean mapservermode = false;
     private EventBus eb;
     @Override
     public void start(Future<Void> fut) {
-        System.out.println("s="+s.getName());
         eb = vertx.eventBus();
-        int port = config().getInteger("http.port", 8080);
-        Log.info("read port:"+port);
-        // Create a router object.
-        Router router = Router.router(vertx);
+        int port = 8080;
+        String ports = (String)Config.getInstance().getConfig().get("http.port").toString();
+        if(ports != null && !ports.isEmpty()){
+            try {
+                port = Integer.valueOf(ports.toString());
+            }catch (Exception e){
+                port = 8080;
+            }
 
-        // Bind "/" to our hello message - so we are still compatible.
+        }
+        logger.info("Service will work on :"+port);
+        Router router = Router.router(vertx);
         router.route("/").handler(routingContext -> {
             HttpServerResponse response = routingContext.response();
             response
@@ -57,8 +59,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                         result -> {
                             if (result.succeeded()) {
                                 fut.complete();
-                                Log.info("Serivce Started");
-                                pingService();
+                                logger.info("Serivce Started");
                             } else {
                                 fut.fail(result.cause());
                             }
@@ -69,7 +70,7 @@ public class LocQueryVerticle extends AbstractVerticle{
          LocInfo loc = null;
         StringWriter out = new StringWriter();
         try {
-            Log.info("Handling request:" + routingContext.request().toString());
+            logger.info("Handling request:" + routingContext.request().toString());
             String lat = routingContext.request().getParam("lat").toString();
             String lon = routingContext.request().getParam("lon").toString();
 
@@ -79,23 +80,26 @@ public class LocQueryVerticle extends AbstractVerticle{
                 sb.append(lat.trim()).append(",").append(lon.trim());
                 eb.send("Server:China",sb.toString(), reply -> {
                     if (reply.succeeded()) {
-                        Log.info(String.format("[%s, %s]->%s", lat, lon, reply.result().body().toString()));
+                        logger.info(String.format("[%s, %s]->%s", lat, lon, reply.result().body().toString()));
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
                                 .end(reply.result().body().toString());
                     } else {
-                        Log.warning("Server no reply for:"+sb);
+                        logger.warn("Server no reply for:"+sb);
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end("Error: Map server!");
                     }
                 });
             }else{
-                Log.warning("Illegal parameters");
+                logger.warn("Illegal parameters");
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end("Illegal parameter!");
             }
         } catch (Exception e){
             e.printStackTrace();
-            Log.warning("Problem handling request:"+routingContext.request().toString());
+            logger.warn("Problem handling request:"+routingContext.request().toString());
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end("Ooops, Error:( No info found for your input!");
@@ -105,7 +109,7 @@ public class LocQueryVerticle extends AbstractVerticle{
         LocInfo loc = null;
         StringWriter out = new StringWriter();
         try {
-            Log.info("Handling request:" + routingContext.request().toString());
+            logger.info("Handling request:" + routingContext.request().toString());
             String lat = routingContext.request().getParam("lat").toString();
             String lon = routingContext.request().getParam("lon").toString();
             double latd = new Double(lat);
@@ -114,13 +118,13 @@ public class LocQueryVerticle extends AbstractVerticle{
             loc = new LocInfo(res);
             ObjectMapper om = new ObjectMapper();
             om.writeValue(out, loc.data);
-            Log.info(String.format("[%f, %f]->%s",latd, lond, out.toString()));
+            logger.info(String.format("[%f, %f]->%s",latd, lond, out.toString()));
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end(out.toString());
         }catch (Exception e){
             e.printStackTrace();
-            Log.warning("Problem handling request:"+routingContext.request().toString());
+            logger.warn("Problem handling request:"+routingContext.request().toString());
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end("Ooops, Error:( No info found for your input!");
@@ -129,7 +133,7 @@ public class LocQueryVerticle extends AbstractVerticle{
     private void pingService(){
         int port = config().getInteger("http.port", 8080);
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lat=109.594513&lon=34.644989",
-                response -> Log.info("Service Ready")
+                response -> logger.info("Service Ready")
                 );
     }
 }

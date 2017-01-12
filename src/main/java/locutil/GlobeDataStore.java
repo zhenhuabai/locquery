@@ -6,7 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import common.Config;
-import common.Loggable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -16,14 +17,9 @@ import org.json.simple.JSONObject;
 /**
  * Created by 白振华 on 2017/1/7.
  */
-public final class GlobeDataStore extends Loggable{
+public final class GlobeDataStore {
+    private static final Logger logger = LogManager.getLogger(GlobeDataStore.class);
     private static GlobeDataStore instance = null;
-    //windows test
-    //private String file = "c:\\gis\\CHN_adm\\CHN_adm0.shp";
-    //private String file = "c:\\gis\\dpkg\\CHN_adm.gpkg";
-    //unix like
-    //private String fileUnix = "/opt/locquery/data/CHN_adm3.shp";
-    //private File datafile = new File(file);
     public DataStore store = null;
     public SimpleFeatureSource featureSource = null;
     private JSONArray maps = null;
@@ -42,16 +38,16 @@ public final class GlobeDataStore extends Loggable{
             JSONArray jsobj = (JSONArray)map.get("columns");
             String[] cols = new String[jsobj.size()];
             jsobj.toArray(cols);
-            Log.info("json="+jsobj.toString());
+            logger.info("json="+jsobj.toString());
             //String[] cols = {"name_0","name_1"};//(JSONArray)map.get("columns");
-            Log.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
+            logger.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
             outline = loadDataStore(path1);
             detail = loadDataStore(path2);
             loadedMap.add(new CountryMapData(name, outline, detail, cols));
-            Log.info(String.format("Map %s installed\n", name));
+            logger.info(String.format("Map %s installed\n", name));
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("%d seconds took loading map data\n", (end - start)/1000));
+        logger.info(String.format("%d seconds took loading map data\n", (end - start)/1000));
     };
     public static GlobeDataStore getInstance(){
         if (instance == null){
@@ -67,7 +63,7 @@ public final class GlobeDataStore extends Loggable{
     }
     private GlobeDataStore(String storename){
         super();
-        Log.info("Single map service mode");
+        logger.info("Single map service mode");
         DataStore outline, detail;
         long start = System.currentTimeMillis();
         JSONArray maps = Config.getInstance().getMapConfig();
@@ -80,16 +76,16 @@ public final class GlobeDataStore extends Loggable{
                 JSONArray jsobj = (JSONArray) map.get("columns");
                 String[] cols = new String[jsobj.size()];
                 jsobj.toArray(cols);
-                Log.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
+                logger.info(String.format("Loading %s [%s],[%s]\n", name, path1, path2));
                 outline = loadDataStore(path1);
                 detail = loadDataStore(path2);
                 loadedMap.add(new CountryMapData(name, outline, detail, cols));
-                Log.info(String.format("Map %s installed\n", name));
+                logger.info(String.format("Map %s installed\n", name));
                 break;
             }
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("%d seconds took loading map data\n", (end - start)/1000));
+        logger.info(String.format("%d seconds took loading map data\n", (end - start)/1000));
     }
     private DataStore loadDataStore(String filename){
         store = null;
@@ -99,42 +95,19 @@ public final class GlobeDataStore extends Loggable{
             map.put("url", file.toURI().toURL());
             map.put("charset", "utf-8");
             store = DataStoreFinder.getDataStore(map);
-            Log.info("Loaded the map data:"+filename);
+            logger.info("Loaded the map data:"+filename);
         }catch (Exception e){
             e.printStackTrace();
-            Log.severe("Error open database:"+filename);
+            logger.error("Error open database:"+filename);
         }
         return store;
     }
-    /*
-    private void loadGlobleData(){
-        try {
-            maps = Config.getInstance().getMapConfig();
-            Map<String, Object> map = new HashMap<>();
-            map.put("url", datafile.toURI().toURL());
-            map.put("charset", "unico");
-            store = FileDataStoreFinder.getDataStore(datafile);
-            featureSource = store.getFeatureSource();
-            Log.info("loaded the map data");
-        }catch (Exception e){
-            e.printStackTrace();
-           Log.severe("Error open database");
-        }
-    }
-    */
     public LocInfo findCityDirect(double lat, double lon){
         long start = System.currentTimeMillis();
         LocInfo loc = null;
         loc = loadedMap.get(0).getCityDirect(lat,lon);
-        /*
-        for(  CountryMapData d : loadedMap){
-            loc = d.getCityDirect(lat, lon);
-            if (loc != null){
-                break;
-            }
-        }*/
         long end = System.currentTimeMillis();
-        Log.info(String.format("Direct searching [%f, %f] took %d ms\n", lat, lon, end - start));
+        logger.info(String.format("Direct searching [%f, %f] took %d ms\n", lat, lon, end - start));
         return loc;
     }
     public LocInfo findCity(double lat, double lon){
@@ -147,7 +120,7 @@ public final class GlobeDataStore extends Loggable{
             }
         }
         long end = System.currentTimeMillis();
-        Log.info(String.format("Searching [%f, %f] took %d ms\n", lat, lon, end - start));
+        logger.info(String.format("Searching [%f, %f] took %d ms\n", lat, lon, end - start));
         return loc;
     }
 
