@@ -1,0 +1,43 @@
+#!/bin/bash
+ps -ef|grep LocQuery|grep -v grep 1>&2 >/dev/null
+if [ $? == 0 ]; then
+	echo Service is already running
+    exit 10
+fi
+JVER=`java -version 2>&1`
+MAPSERVER=com.huleibo.CountryMapServer
+HTTPSERVER=com.huleibo.LocQueryVerticle
+echo $JVER|grep "\"1.8."
+if [ $? != 0 ]; then
+	echo "java must be installed and version >= 1.8"
+	exit 1
+fi
+export PATH=./vertx/bin:$PATH
+export CLASSPATH=./lib
+SYS=`uname`
+in=""
+if [ -z $in ]; then
+	case "$SYS" in
+		Darwin)
+			in=`sysctl -n hw.ncpu`
+			;;
+		Linux)
+			in=`grep -c ^processor /proc/cpuinfo`
+			;;
+		*)
+			in=1
+			;;
+		esac
+fi
+exefile=`ls lib/locquery-*-fat.jar 2>/dev/null`
+if [ -z $exefile ]; then
+	echo no package found
+	exit 3
+fi
+echo Starting services by $in...
+COUNTER=0
+while [  $COUNTER -lt $in ]; do
+	map=China vertx run -cp $exefile $MAPSERVER --cluster&
+	let COUNTER=COUNTER+1
+done
+vertx run -cp $exefile $HTTPSERVER --cluster&

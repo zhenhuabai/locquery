@@ -4,7 +4,7 @@
 
   <groupId>com.huleibo</groupId>
   <artifactId>locquery</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.0.1</version>
   <packaging>jar</packaging>
 
   <name>locquery</name>
@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-     <geotools.version>17-SNAPSHOT</geotools.version>
+     <geotools.version>16.1</geotools.version>
   </properties>
 
     <dependencies>
@@ -87,7 +87,7 @@
         </repository>
         <repository>
           <snapshots>
-            <enabled>true</enabled>
+            <enabled>false</enabled>
           </snapshots>
           <id>boundless</id>
           <name>Boundless Maven Repository</name>
