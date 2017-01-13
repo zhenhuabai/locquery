@@ -6,11 +6,18 @@ import io.vertx.core.eventbus.EventBus;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import locutil.GlobeDataStore;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.HashMap;
 import java.util.Map;
 //import java.util.logging.Logger;
 
@@ -22,6 +29,8 @@ public class CountryMapServer extends AbstractVerticle{
     private String mappath;
     public static boolean inDebug = false;
     private EventBus eb;
+    private String mapLname;
+    private static Map<String,String> translation = new HashMap<String, String>();
     private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
     //Logger Log = Logger.getLogger(this.getClass().getName());
     static public void main(String[] args){
@@ -57,6 +66,7 @@ public class CountryMapServer extends AbstractVerticle{
     @Override
     public void start() throws Exception {
         setupEnv();
+        loadTranslation();
         eb = vertx.eventBus();
         eb.consumer("Server:"+mappath, message -> {
             String[] loc = message.body().toString().split(",");
@@ -68,7 +78,8 @@ public class CountryMapServer extends AbstractVerticle{
                 LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
                 if (li != null) {
                     logger.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
-                    message.reply(li.toString());
+                    translateLocInfo(li);
+                    message.reply(li.toLocalString());
                 } else {
                     message.reply("{}");
                 }
@@ -77,5 +88,70 @@ public class CountryMapServer extends AbstractVerticle{
                 message.reply("{}");
             }
         });
+    }
+    private void loadTranslation(){
+        if(translation.size()>1){
+            logger.info("Translation was loaded for:"+mappath);
+            return;
+        }else{
+            logger.info("Loading translation for:"+mappath);
+        }
+        JSONArray maps = Config.getInstance().getMapConfig();
+        String filename = null;
+        for (int i = 0; i < maps.size(); i++) {
+            JSONObject map = (JSONObject) maps.get(i);
+            String name = map.get("name").toString();
+            mapLname = map.get("lname").toString();
+            if (name.equals(mappath)) {
+                filename = map.get("translation").toString();
+                break;
+            }
+        }
+        if(filename != null) {
+            try {
+                Reader in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
+                Iterable<CSVRecord> records = CSVFormat.EXCEL
+                        .withHeader("enprovince","encity","encounty",
+                        "cnprovince","cncity","cncounty").parse(in);
+                logger.info("loading translation from:" + filename);
+                for (CSVRecord record : records) {
+                    String enstate = record.get("enprovince");
+                    String encity = record.get("encity");
+                    String encounty = record.get("encounty");
+                    String cnstate = record.get("cnprovince");
+                    String cncity = record.get("cncity");
+                    String cncounty = record.get("cncounty");
+                    String key = new StringBuffer().append(enstate).append(",")
+                            .append(encity).append(",").append(encounty).toString();
+                    String value = new StringBuffer().append(cnstate).append(",")
+                            .append(cncity).append(",").append(cncounty).toString();
+                    translation.put(key.trim().toLowerCase(), value);
+                    logger.info(key + "->" + value);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("Translation not loaded from " + filename);
+            }
+        }else{
+            logger.error("Translation not set for:" + filename);
+        }
+    }
+    private void translateLocInfo(LocInfo li){
+        String key = li.data.get(li.adms[1]) + "," +
+                li.data.get(li.adms[2])+","+ li.data.get(li.adms[3]);
+        String skey = key.toLowerCase();
+        String value = translation.get(skey);
+        if(value != null){
+            logger.debug(key+"->"+value);
+            String[] cnValues = value.split(",");
+            if(cnValues != null && cnValues.length == 3) {
+                li.setTranslation(new String[]{mapLname,
+                        cnValues[0], cnValues[1], cnValues[2]});
+            }else{
+                logger.error("Wrong dictionay:"+key+"->"+value);
+            }
+        }else{
+            logger.info(skey+" not found, no translation");
+        }
     }
 }

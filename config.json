@@ -2,6 +2,7 @@
   "http.port" : 8080,
   "maps" : [
     {"name": "China",
+      "lname":"中国",
       "outline": {
         "windows": "c:\\gis\\maps\\CHN_adm0.shp",
         "linux": "/opt/locquery/maps/CHN_adm0.shp",
@@ -13,7 +14,11 @@
         "mac": "/Users/dbai/Downloads/gis/CHN_adm3.shp"
       },
       "columns": ["NAME_0", "NAME_1", "NAME_2", "NAME_3"],
-      "instances": 3
+      "translation": {
+        "windows": "c:\\gis\\locquery\\chinese.csv",
+        "linux": "chinese.csv",
+        "mac": "chinese.csv"
+      }
     }
   ]
 }

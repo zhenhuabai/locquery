@@ -11,6 +11,11 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import locutil.GlobeDataStore;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +35,7 @@ public class LocQueryVerticleTest {
     @Before
     public void setUp(TestContext context) {
         vertx = Vertx.vertx();
+        Config.enableLog();
         port = Integer.valueOf(Config.getInstance().getConfig().get("http.port").toString());
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("http.port", port)
@@ -64,10 +70,13 @@ public class LocQueryVerticleTest {
     @Test
     public void testQueryCity(TestContext context) {
         final Async async = context.async();
-        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lat=109.594513&lon=34.644989",
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989",
                 response -> {
                     response.handler(body -> {
-                        context.assertTrue(body.toString().contains("Weinan"));
+                        System.out.print(body.toString());
+                        boolean ch = body.toString().contains("渭南");
+                        boolean en = body.toString().contains("Weinan");
+                        context.assertTrue(ch||en);
                         async.complete();
                     });
                 });

@@ -2,10 +2,17 @@ package common;
 
 import io.vertx.core.json.JsonObject;
 
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -32,7 +39,9 @@ public class Config{
         if (config == null) {
             JSONParser parser = new JSONParser();
             try {
-                config = (JSONObject)parser.parse(new FileReader("./config.json"));
+
+                Reader in = new InputStreamReader(new FileInputStream("./config.json"),"UTF-8");
+                config = (JSONObject)parser.parse(in);
                 logger.info("Result:"+config.toJSONString());
             } catch (Exception e){
                 e.printStackTrace();
@@ -65,12 +74,21 @@ public class Config{
                 jo.clear();
                 jo.put("outline", ((JSONObject)(((JSONObject)jsa.get(i)).get("outline"))).get(sys).toString());
                 jo.put("detail", ((JSONObject)(((JSONObject)jsa.get(i)).get("detail"))).get(sys).toString());
+                jo.put("translation", ((JSONObject)(((JSONObject)jsa.get(i)).get("translation"))).get(sys).toString());
                 jo.put("name",((JSONObject)jsa.get(i)).get("name"));
+                jo.put("lname",((JSONObject)jsa.get(i)).get("lname"));
                 jo.put("columns",((JSONObject)jsa.get(i)).get("columns"));
                 jsar.add(jo.clone());
             }
         }
         logger.info("Result:"+jsar.toJSONString());
         return jsar;
+    }
+    public static void enableLog(){
+        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        loggerConfig.setLevel(Level.ALL);
+        ctx.updateLoggers();
     }
 }

@@ -71,8 +71,8 @@ public class LocQueryVerticle extends AbstractVerticle{
         StringWriter out = new StringWriter();
         try {
             logger.info("Handling request:" + routingContext.request().toString());
-            String lat = routingContext.request().getParam("lat").toString();
-            String lon = routingContext.request().getParam("lon").toString();
+            String lon = routingContext.request().getParam("lat").toString();
+            String lat = routingContext.request().getParam("lon").toString();
 
             if(lat != null && lon != null && !lat.isEmpty() && !lon.isEmpty()) {
                 //TODO: hardcoded map server so far

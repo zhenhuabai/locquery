@@ -14,7 +14,8 @@ import java.util.Map;
 public class LocInfo {
     private static final Logger logger = LogManager.getLogger(LocInfo.class);
     public Map<String, String> data = new LinkedHashMap<String, String>();
-    private String[] adms = {"country", "province", "city", "county"};
+    public Map<String, String> translatedData = null;
+    public String[] adms = {"country", "province", "city", "county"};
     private String[] values;
     public LocInfo(String[] storeLoc){
         values = storeLoc;
@@ -35,6 +36,20 @@ public class LocInfo {
         }
         return out.toString();
     }
+    public String toLocalString(){
+        StringWriter out = new StringWriter();
+        if(translatedData != null) {
+            ObjectMapper om = new ObjectMapper();
+            try {
+                om.writeValue(out, translatedData);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return out.toString();
+        } else {
+            return toString();
+        }
+    }
     public void print(){
         StringWriter out = new StringWriter();
         ObjectMapper om = new ObjectMapper();
@@ -44,5 +59,13 @@ public class LocInfo {
             e.printStackTrace();
         }
         logger.info(out.toString());
+    }
+    public void setTranslation(String[] tr){
+        if(tr.length == adms.length){
+            translatedData = new LinkedHashMap<String, String>();
+            for (int i = 0; i < adms.length; i++) {
+                translatedData.put(adms[i], tr[i]);
+            }
+        }
     }
 }

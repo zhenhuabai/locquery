@@ -1,6 +1,7 @@
 package com.huleibo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import common.Config;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
@@ -33,6 +34,7 @@ public class CountryMapServerTest {
 
     @Before
     public void setUp(TestContext context) {
+        Config.enableLog();
         vertx = Vertx.vertx();
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("debug", 1)
@@ -60,7 +62,10 @@ public class CountryMapServerTest {
                     JSONParser jp = new JSONParser();
                     try {
                         JSONObject jo = (JSONObject)jp.parse(reply.result().body().toString());
-                        context.assertEquals("China", jo.get("country"));
+                        String cn = jo.get("country").toString();
+                        boolean t = cn.matches("China|中国");
+                        context.assertTrue(t);
+                        //context.assertEquals("China", jo.get("country"));
                         System.out.println("Received reply " + reply.result().body());
                         async.complete();
                     }catch (Exception e){
