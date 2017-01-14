@@ -30,6 +30,7 @@ public class CountryMapServer extends AbstractVerticle{
     public static boolean inDebug = false;
     private EventBus eb;
     private String mapLname;
+    private boolean translationLoaded = false;
     private static Map<String,String> translation = new HashMap<String, String>();
     private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
     //Logger Log = Logger.getLogger(this.getClass().getName());
@@ -66,7 +67,12 @@ public class CountryMapServer extends AbstractVerticle{
     @Override
     public void start() throws Exception {
         setupEnv();
-        loadTranslation();
+        vertx.executeBlocking(future -> {
+            loadTranslation();
+            future.complete();
+        }, res->{
+            logger.info("Translation loading completed.");
+        });
         eb = vertx.eventBus();
         eb.consumer("Server:"+mappath, message -> {
             String[] loc = message.body().toString().split(",");
@@ -107,7 +113,7 @@ public class CountryMapServer extends AbstractVerticle{
                 break;
             }
         }
-        if(filename != null) {
+        if(filename != null && !filename.isEmpty()) {
             try {
                 Reader in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
                 Iterable<CSVRecord> records = CSVFormat.EXCEL
@@ -126,6 +132,7 @@ public class CountryMapServer extends AbstractVerticle{
                     String value = new StringBuffer().append(cnstate).append(",")
                             .append(cncity).append(",").append(cncounty).toString();
                     translation.put(key.trim().toLowerCase(), value);
+                    translationLoaded = true;//make sure when at least one
                     logger.info(key + "->" + value);
                 }
             } catch (Exception e) {
@@ -137,6 +144,10 @@ public class CountryMapServer extends AbstractVerticle{
         }
     }
     private void translateLocInfo(LocInfo li){
+        if(translationLoaded == false){
+            logger.warn("Translation not loaded, no translation!");
+            return;
+        }
         String key = li.data.get(li.adms[1]) + "," +
                 li.data.get(li.adms[2])+","+ li.data.get(li.adms[3]);
         String skey = key.toLowerCase();

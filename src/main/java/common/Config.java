@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Set;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +29,7 @@ public class Config{
         return ourInstance;
     }
 
+    private static final String CONFIGFILE = "./config.json";
     private JSONObject config;
     private Config() {
         getConfig();
@@ -40,7 +42,7 @@ public class Config{
             JSONParser parser = new JSONParser();
             try {
 
-                Reader in = new InputStreamReader(new FileInputStream("./config.json"),"UTF-8");
+                Reader in = new InputStreamReader(new FileInputStream(CONFIGFILE),"UTF-8");
                 config = (JSONObject)parser.parse(in);
                 logger.info("Result:"+config.toJSONString());
             } catch (Exception e){
@@ -72,12 +74,17 @@ public class Config{
             }
             for (int i = 0; i < jsa.size(); i++) {
                 jo.clear();
-                jo.put("outline", ((JSONObject)(((JSONObject)jsa.get(i)).get("outline"))).get(sys).toString());
-                jo.put("detail", ((JSONObject)(((JSONObject)jsa.get(i)).get("detail"))).get(sys).toString());
-                jo.put("translation", ((JSONObject)(((JSONObject)jsa.get(i)).get("translation"))).get(sys).toString());
-                jo.put("name",((JSONObject)jsa.get(i)).get("name"));
-                jo.put("lname",((JSONObject)jsa.get(i)).get("lname"));
+                Set<String> keys= ((JSONObject)((JSONObject)jsa.get(i))).keySet();
+                jo.put("lname", ((JSONObject) jsa.get(i)).get("lname"));
+                jo.put("detail", ((JSONObject) (((JSONObject) jsa.get(i)).get("detail"))).get(sys).toString());
                 jo.put("columns",((JSONObject)jsa.get(i)).get("columns"));
+                jo.put("name",((JSONObject)jsa.get(i)).get("name"));
+                if(keys.contains("outline")) {
+                    jo.put("outline", ((JSONObject) (((JSONObject) jsa.get(i)).get("outline"))).get(sys).toString());
+                }
+                if(keys.contains("translation")) {
+                    jo.put("translation", ((JSONObject) (((JSONObject) jsa.get(i)).get("translation"))).get(sys).toString());
+                }
                 jsar.add(jo.clone());
             }
         }

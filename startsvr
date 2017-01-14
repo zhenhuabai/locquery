@@ -12,7 +12,7 @@ if [ $? != 0 ]; then
 	echo "java must be installed and version >= 1.8"
 	exit 1
 fi
-export PATH=./vertx/bin:$PATH
+export PATH=./lib/vertx/bin:$PATH
 export CLASSPATH=./lib
 SYS=`uname`
 in=""
@@ -36,7 +36,7 @@ if [ -z $exefile ]; then
 fi
 echo Starting services by $in...
 COUNTER=0
-while [  $COUNTER -lt $in ]; do
+while [ $COUNTER -lt $in ]; do
 	map=China vertx run -cp $exefile $MAPSERVER --cluster&
 	let COUNTER=COUNTER+1
 done
