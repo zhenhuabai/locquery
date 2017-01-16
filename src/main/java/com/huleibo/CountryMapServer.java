@@ -78,14 +78,23 @@ public class CountryMapServer extends AbstractVerticle{
             String[] loc = message.body().toString().split(",");
             logger.info(String.format("[%s, %s]", loc[0], loc[1]));
             double lat, lon;
+            String lang;
             try {
                 lat = new Double(loc[0]);
                 lon = new Double(loc[1]);
                 LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
                 if (li != null) {
                     logger.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
-                    translateLocInfo(li);
-                    message.reply(li.toLocalString());
+                    if(loc.length > 2 && loc[2].equalsIgnoreCase("zh")){
+                        if(translateLocInfoCN(li)){
+                            message.reply(li.toLocalString());
+                        } else {
+                            message.reply(li.toString());
+                        }
+                    } else {
+                        message.reply(li.toString());
+                    }
+
                 } else {
                     message.reply("{}");
                 }
@@ -143,10 +152,11 @@ public class CountryMapServer extends AbstractVerticle{
             logger.error("Translation not set for:" + filename);
         }
     }
-    private void translateLocInfo(LocInfo li){
+    private boolean translateLocInfoCN(LocInfo li){
+        boolean translated = false;
         if(translationLoaded == false){
             logger.warn("Translation not loaded, no translation!");
-            return;
+            return false;
         }
         String key = li.data.get(li.adms[1]) + "," +
                 li.data.get(li.adms[2])+","+ li.data.get(li.adms[3]);
@@ -158,11 +168,14 @@ public class CountryMapServer extends AbstractVerticle{
             if(cnValues != null && cnValues.length == 3) {
                 li.setTranslation(new String[]{mapLname,
                         cnValues[0], cnValues[1], cnValues[2]});
+                translated = true;
+                li.putExtraTranslation("lang","zh");
             }else{
                 logger.error("Wrong dictionay:"+key+"->"+value);
             }
         }else{
             logger.info(skey+" not found, no translation");
         }
+        return translated;
     }
 }

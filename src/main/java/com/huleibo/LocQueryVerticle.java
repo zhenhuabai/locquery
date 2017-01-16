@@ -73,11 +73,15 @@ public class LocQueryVerticle extends AbstractVerticle{
             logger.info("Handling request:" + routingContext.request().toString());
             String lon = routingContext.request().getParam("lat").toString();
             String lat = routingContext.request().getParam("lon").toString();
+            String lang = routingContext.request().getParam("lang");
 
             if(lat != null && lon != null && !lat.isEmpty() && !lon.isEmpty()) {
                 //TODO: hardcoded map server so far
                 StringBuffer sb = new StringBuffer();
                 sb.append(lat.trim()).append(",").append(lon.trim());
+                if (lang != null && !lang.isEmpty()) {
+                    sb.append(",").append(lang.trim());
+                }
                 eb.send("Server:China",sb.toString(), reply -> {
                     if (reply.succeeded()) {
                         logger.info(String.format("[%s, %s]->%s", lat, lon, reply.result().body().toString()));
@@ -88,21 +92,17 @@ public class LocQueryVerticle extends AbstractVerticle{
                         logger.warn("Server no reply for:"+sb);
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
-                                .end("Error: Map server!");
+                                .end("Error: Map server not ready!");
                     }
                 });
             }else{
                 logger.warn("Illegal parameters");
-                routingContext.response()
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end("Illegal parameter!");
+                routingContext.response().setStatusCode(400).end();
             }
         } catch (Exception e){
             e.printStackTrace();
             logger.warn("Problem handling request:"+routingContext.request().toString());
-            routingContext.response()
-                    .putHeader("content-type", "application/json; charset=utf-8")
-                    .end("Ooops, Error:( No info found for your input!");
+            routingContext.response().setStatusCode(400).end();
         }
     }
     private void queryCity(RoutingContext routingContext) {

@@ -22,6 +22,8 @@ public class LocInfo {
         for (int i = 0; i < storeLoc.length && i < adms.length; i++) {
             data.put(adms[i], storeLoc[i]);
         }
+        //language default as English
+        data.put("lang","en");
     }
     public String[] values(){
         return values;
@@ -67,5 +69,11 @@ public class LocInfo {
                 translatedData.put(adms[i], tr[i]);
             }
         }
+    }
+    public void putExtraTranslation(String key, String val){
+        translatedData.put(key, val);
+    }
+    public void putExtra(String key, String val){
+        data.put(key, val);
     }
 }

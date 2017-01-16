@@ -74,9 +74,44 @@ public class LocQueryVerticleTest {
                 response -> {
                     response.handler(body -> {
                         System.out.print(body.toString());
-                        boolean ch = body.toString().contains("渭南");
                         boolean en = body.toString().contains("Weinan");
-                        context.assertTrue(ch||en);
+                        context.assertTrue(en);
+                        async.complete();
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=zh",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean ch = body.toString().contains("渭南");
+                        context.assertTrue(ch);
+                        async.complete();
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=en",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("Weinan");
+                        context.assertTrue(en);
+                        async.complete();
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=122.715721&lat=52.949659&lang=zh",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("Mohe");
+                        context.assertTrue(en);
+                        async.complete();
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=none",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean ch = body.toString().contains("Weinan");
+                        context.assertTrue(ch);
                         async.complete();
                     });
                 });
@@ -86,10 +121,8 @@ public class LocQueryVerticleTest {
         final Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/api/city",
                 response -> {
-                    response.handler(body -> {
-                        context.assertTrue(body.toString().contains("Error"));
-                        async.complete();
-                    });
+                    context.assertTrue(response.statusCode() == 400);
+                    async.complete();
                 });
     }
 }
