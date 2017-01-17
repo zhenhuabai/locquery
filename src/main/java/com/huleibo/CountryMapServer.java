@@ -130,19 +130,29 @@ public class CountryMapServer extends AbstractVerticle{
                         "cnprovince","cncity","cncounty").parse(in);
                 logger.info("loading translation from:" + filename);
                 for (CSVRecord record : records) {
+                    if(record.size()<6){
+                        logger.warn("Invalid line:"+record.toString());
+                        continue;
+                    }
                     String enstate = record.get("enprovince");
                     String encity = record.get("encity");
                     String encounty = record.get("encounty");
                     String cnstate = record.get("cnprovince");
                     String cncity = record.get("cncity");
                     String cncounty = record.get("cncounty");
-                    String key = new StringBuffer().append(enstate).append(",")
-                            .append(encity).append(",").append(encounty).toString();
-                    String value = new StringBuffer().append(cnstate).append(",")
-                            .append(cncity).append(",").append(cncounty).toString();
-                    translation.put(key.trim().toLowerCase(), value);
-                    translationLoaded = true;//make sure when at least one
-                    logger.info(key + "->" + value);
+                    if (cnstate != null && !cnstate.isEmpty()
+                            && cncity != null && !cncity.isEmpty()
+                            && cncounty != null && !cncounty.isEmpty()) {
+                        String key = new StringBuffer().append(enstate).append(",")
+                                .append(encity).append(",").append(encounty).toString();
+                        String value = new StringBuffer().append(cnstate).append(",")
+                                .append(cncity).append(",").append(cncounty).toString();
+                        translation.put(key.trim().toLowerCase(), value);
+                        translationLoaded = true;//make sure when at least one
+                        logger.info(key + "->" + value);
+                    } else {
+                        logger.warn("Empty value");
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

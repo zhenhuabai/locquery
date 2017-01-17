@@ -93,7 +93,7 @@ public final class GlobeDataStore {
             File file = new File(filename);
             Map<String, Object> map = new HashMap<>();
             map.put("url", file.toURI().toURL());
-            map.put("charset", "utf-8");
+            map.put("charset", "iso-8859-9");
             store = DataStoreFinder.getDataStore(map);
             logger.info("Loaded the map data:"+filename);
         }catch (Exception e){

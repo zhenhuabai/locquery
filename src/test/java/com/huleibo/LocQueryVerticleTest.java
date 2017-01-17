@@ -125,4 +125,19 @@ public class LocQueryVerticleTest {
                     async.complete();
                 });
     }
+    @Test
+    public void testQueryEncoding(TestContext context) {
+        final Async async = context.async();
+
+        //test characters
+        vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=117.944367&lat=28.40568",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("Shangrao");
+                        context.assertTrue(en);
+                        async.complete();
+                    });
+                });
+    }
 }

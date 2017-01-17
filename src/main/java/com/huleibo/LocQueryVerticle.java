@@ -55,7 +55,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                 .listen(
                         // Retrieve the port from the configuration,
                         // default to 8080.
-                        config().getInteger("http.port", 8080),
+                        port,
                         result -> {
                             if (result.succeeded()) {
                                 fut.complete();
