@@ -1,5 +1,17 @@
 {
   "http.port" : 18080,
+  "weather" : {
+    "citylist": {
+      "windows": "c:\\gis\\weather\\supportedcities.csv",
+      "linux": "/opt/locquery/mapcities.2nd.csv",
+      "mac": "/Users/dbai/Downloads/gis/mapcities.test.csv"
+    },
+    "dbfile":{
+      "windows": "c:\\gis\\tmp\\weatherdb.csv",
+      "linux": "/opt/locquery/weatherdb.csv",
+      "mac": "/Users/dbai/Downloads/gis/weatherdb.csv"
+    }
+  },
   "maps" : [
     {"name": "China",
       "lname":"中国",
@@ -15,7 +27,7 @@
       },
       "columns": ["NAME_0", "NAME_1", "NAME_2", "NAME_3"],
       "translation": {
-        "windows": "c:\\gis\\locquery\\chinese.csv",
+        "windows": "c:\\gis\\tmp\\chinese.csv",
         "linux": "chinese.csv",
         "mac": "chinese.csv"
       }

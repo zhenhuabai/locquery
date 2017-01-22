@@ -31,11 +31,11 @@ public class XinZhiTianQiTest {
         final Async async = context.async();
         String[] cities = {"tianjin", "beijing"};
         for (int i = 0; i < cities.length; i++) {
-            while (!xz.isAvailble()){
+            while (!xz.isAvailable()){
                 Thread.sleep(1000);
                 System.out.println("I am waiting...");
             }
-            if(xz.isAvailble()) {
+            if(xz.isAvailable()) {
                 xz.getData(cities[i], httpClientResponse -> {
                     httpClientResponse.handler(
                             body -> {

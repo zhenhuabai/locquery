@@ -48,6 +48,8 @@ public class LocQueryVerticleTest {
                 );
         vertx.deployVerticle(CountryMapServer.class.getName(), options,
                 context.asyncAssertSuccess());
+        vertx.deployVerticle(CityWeatherServer.class.getName(),
+                context.asyncAssertSuccess());
     }
 
     @After
@@ -135,6 +137,36 @@ public class LocQueryVerticleTest {
                     response.handler(body -> {
                         System.out.print(body.toString());
                         boolean en = body.toString().contains("Shangrao");
+                        context.assertTrue(en);
+                        async.complete();
+                    });
+                });
+    }
+
+    @Test
+    public void testQueryWeather(TestContext context) {
+        final Async async = context.async();
+        vertx.createHttpClient().getNow(port, "localhost", "/api/weather?location=xxx,ttt",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("error");
+                        context.assertTrue(en);
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/weather?location=",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("error");
+                        context.assertTrue(en);
+                    });
+                });
+        vertx.createHttpClient().getNow(port, "localhost", "/api/weather?location=118.8,32.05",
+                response -> {
+                    response.handler(body -> {
+                        System.out.print(body.toString());
+                        boolean en = body.toString().contains("weather");
                         context.assertTrue(en);
                         async.complete();
                     });

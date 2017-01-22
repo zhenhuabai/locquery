@@ -4,7 +4,7 @@
 
   <groupId>com.huleibo</groupId>
   <artifactId>locquery</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.3</version>
   <packaging>jar</packaging>
 
   <name>locquery</name>

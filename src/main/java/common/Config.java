@@ -51,6 +51,35 @@ public class Config{
         }
         return config;
     }
+    public JSONObject getWeatherConfig(){
+        JSONObject jo;
+        JSONObject jor = new JSONObject();
+        if (config != null){
+            jo = (JSONObject)((JSONObject)config.get("weather")).clone();
+            String sys = null;
+            switch(OsCheck.getOperatingSystemType() ) {
+                case MacOS:
+                    sys = "mac";
+                    break;
+                case Linux:
+                    sys = "linux";
+                    break;
+                case Windows:
+                    sys = "windows";
+                    break;
+                default:
+                    sys = "windows";
+                    break;
+            }
+            if(jo != null){
+                String citypath = ((JSONObject)jo.get("citylist")).get(sys).toString();
+                String datapath = ((JSONObject)jo.get("dbfile")).get(sys).toString();
+                jor.put("citylist",citypath);
+                jor.put("dbfile",datapath);
+            }
+        }
+        return jor;
+    }
     public JSONArray getMapConfig(){
         JSONObject jo = new JSONObject();
         JSONArray jsa = null;

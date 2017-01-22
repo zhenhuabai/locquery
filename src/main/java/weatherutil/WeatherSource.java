@@ -21,9 +21,8 @@ public abstract class WeatherSource {
     private boolean locSupported;//if geolocation based query supported
     public WeatherSource(){
        vertx = Vertx.vertx();
-       System.out.println("WeatherSource");
     }
-    public abstract boolean isAvailble();
+    public abstract boolean isAvailable();
     public abstract void getData(double lon, double lat,
                                  Handler<HttpClientResponse> handler);
     public abstract void getData(String cityname,

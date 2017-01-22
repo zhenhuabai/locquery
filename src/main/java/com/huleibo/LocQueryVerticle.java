@@ -3,6 +3,7 @@ package com.huleibo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import common.Config;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.http.HttpServer;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -13,6 +14,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 import locsvc.CityQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.io.File;
 import java.io.StringWriter;
@@ -20,7 +23,20 @@ import java.io.StringWriter;
 /**
  * Created by 白振华 on 2017/1/7.
  */
-public class LocQueryVerticle extends AbstractVerticle{
+public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
+    private HttpServer theServer;
+    public void handle(Signal signalName) {
+        logger.warn("Reveived signal:"+signalName.toString());
+        if(signalName.getName().equalsIgnoreCase("term")){
+            logger.warn("TERM Reveived! Exiting app");
+            if(theServer != null) {
+                theServer.close();
+            }
+        }
+    }
+    private void installSignal(){
+        Signal.handle(new Signal("TERM"), this);
+    }
     private static final Logger logger = LogManager.getLogger(LocQueryVerticle.class);
     //private final Logger Log = Logger.getLogger(this.getClass().getName());
 
@@ -48,9 +64,11 @@ public class LocQueryVerticle extends AbstractVerticle{
         });
         router.route("/api/city*").handler(BodyHandler.create());
         router.get("/api/city").handler(this::remoteQueryCity);
+        router.route("/api/weather*").handler(BodyHandler.create());
+        router.get("/api/weather").handler(this::remoteQueryWeather);
 
-        vertx
-                .createHttpServer()
+        theServer = vertx.createHttpServer();
+                theServer
                 .requestHandler(router::accept)
                 .listen(
                         // Retrieve the port from the configuration,
@@ -58,6 +76,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                         port,
                         result -> {
                             if (result.succeeded()) {
+                                installSignal();
                                 fut.complete();
                                 logger.info("Serivce Started");
                             } else {
@@ -67,7 +86,7 @@ public class LocQueryVerticle extends AbstractVerticle{
                 );
     }
     private void remoteQueryCity(RoutingContext routingContext) {
-         LocInfo loc = null;
+        LocInfo loc = null;
         StringWriter out = new StringWriter();
         try {
             logger.info("Handling request:" + routingContext.request().toString());
@@ -128,6 +147,34 @@ public class LocQueryVerticle extends AbstractVerticle{
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
                     .end("Ooops, Error:( No info found for your input!");
+        }
+    }
+
+    private void remoteQueryWeather(RoutingContext routingContext) {
+        try {
+            String request = routingContext.request().absoluteURI();
+            if(request.contains("location")) {
+                eb.send("Server:Weather", request, reply -> {
+                    if (reply.succeeded()) {
+                        logger.info(String.format("[%s]->%s", request, reply.result().body().toString()));
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    } else {
+                        logger.warn("Server no reply for:"+request);
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end("Error: Map server not ready!");
+                    }
+                });
+            }else{
+                logger.warn("Illegal parameters");
+                routingContext.response().setStatusCode(400).end();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.warn("Problem handling request:"+routingContext.request().toString());
+            routingContext.response().setStatusCode(400).end();
         }
     }
     private void pingService(){

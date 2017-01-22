@@ -30,7 +30,7 @@ public final class XinZhiTianQi extends WeatherSource {
         this.queryTemplate = queryTemplate;
     }
     @Override
-    public boolean isAvailble() {
+    public boolean isAvailable() {
         return !busy;
     }
 
@@ -41,36 +41,41 @@ public final class XinZhiTianQi extends WeatherSource {
 
     @Override
     public void getData(String cityname, Handler<HttpClientResponse> handler) {
-        busy = true;
-        String validCityname = validateCityName(cityname);
-        if(validCityname != null){
-            String url = queryTemplate.replace("[",validCityname);
-            try {
-                URI uri = new URI(url);
-                logger.info("Query by:" + url);
-                String scheme = uri.getScheme();
-                String host = uri.getHost();
-                int port = uri.getPort();
-                String path = uri.getPath();
-                String query = uri.getQuery();
-                HttpClientOptions httpOptions = new HttpClientOptions();
-                if (scheme.equalsIgnoreCase("https")) {
-                    if(port == -1) {
-                        port = 443;
+        if(!busy) {
+            busy = true;
+            String validCityname = validateCityName(cityname);
+            logger.debug("handling:"+validCityname);
+            if (validCityname != null && !validCityname.isEmpty()) {
+                String url = queryTemplate.replace("[", validCityname);
+                try {
+                    URI uri = new URI(url.replaceAll(" ","%20"));
+                    logger.debug("url="+uri);
+                    String scheme = uri.getScheme();
+                    String host = uri.getHost();
+                    int port = uri.getPort();
+                    String path = uri.getPath();
+                    String query = uri.getQuery();
+                    HttpClientOptions httpOptions = new HttpClientOptions();
+                    if (scheme.equalsIgnoreCase("https")) {
+                        if (port == -1) {
+                            port = 443;
+                        }
+                        httpOptions.setSsl(true).setVerifyHost(false).setTrustAll(true);
+                        String pathstr = path+"?"+query;
+                        vertx.createHttpClient(httpOptions).getNow(port,
+                                host, pathstr.replaceAll(" ","%20"), handler);
+                    } else if (scheme.equalsIgnoreCase("http")) {
+                        logger.error("Should NOT happen");
+                        handler.handle(null);
                     }
-                    logger.info(String.format("%s,%s,%d,%s,%s",scheme, host,port,path,query));
-                    httpOptions.setSsl(true).setVerifyHost(false).setTrustAll(true);
-                    //vertx.createHttpClient(httpOptions).getAbs(url,handler);
-                    vertx.createHttpClient(httpOptions).getNow(port,
-                            host,path+"?"+query, handler);
-                } else if(scheme.equalsIgnoreCase("http")){
-                    logger.error("Should NOT happen");
+                } catch (Exception e) {
+                    logger.error("Wrong Template!Should Not Happen!" + url);
                     handler.handle(null);
                 }
-            }catch (Exception e){
-                logger.error("Wrong Template!Should Not Happen!"+url);
-                handler.handle(null);
             }
+        }else{
+            logger.warn("Busy! not submitted");
+            handler.handle(null);
         }
     }
 
@@ -84,17 +89,22 @@ public final class XinZhiTianQi extends WeatherSource {
         try {
             JSONObject jo = (JSONObject) jp.parse(result);
             JSONArray ja = (JSONArray)jo.get("results");
-            JSONObject location = (JSONObject)((JSONObject)ja.get(0)).get("location");
-            JSONObject now = (JSONObject)((JSONObject)ja.get(0)).get("now");
-            String update = ((JSONObject)ja.get(0)).get("last_update").toString();
-            String lname = location.get("name").toString();
-            String weather = now.get("text").toString();
-            String temp = now.get("temperature").toString();
-            wd = new WeatherData();
-            wd.data.put("name",lname);
-            wd.data.put("temperature",temp);
-            wd.data.put("weather",weather);
-            wd.data.put("update",update);
+            if(ja != null) {
+                JSONObject location = (JSONObject) ((JSONObject) ja.get(0)).get("location");
+                JSONObject now = (JSONObject) ((JSONObject) ja.get(0)).get("now");
+                //only the first
+                String update = ((JSONObject) ja.get(0)).get("last_update").toString();
+                String lname = location.get("name").toString();
+                String weather = now.get("text").toString();
+                String temp = now.get("temperature").toString();
+                wd = new WeatherData();
+                wd.data.put("name", lname);
+                wd.data.put("temperature", temp);
+                wd.data.put("weather", weather);
+                wd.data.put("update", update);
+            }else{
+                logger.error("No result returned:"+result);
+            }
         }catch (Exception e){
             e.printStackTrace();
         }

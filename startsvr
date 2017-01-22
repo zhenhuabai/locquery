@@ -5,6 +5,7 @@ if [ $? == 0 ]; then
     exit 10
 fi
 JVER=`java -version 2>&1`
+WEATHERSERVER=com.huleibo.WeatherServer
 MAPSERVER=com.huleibo.CountryMapServer
 HTTPSERVER=com.huleibo.LocQueryVerticle
 echo $JVER|grep "\"1.8."
@@ -40,4 +41,5 @@ while [ $COUNTER -lt $in ]; do
 	map=China vertx run -cp $exefile $MAPSERVER --cluster&
 	let COUNTER=COUNTER+1
 done
+vertx run -cp $exefile $WEATHERSERVER --cluster&
 vertx run -cp $exefile $HTTPSERVER --cluster&
