@@ -19,8 +19,10 @@ import java.net.URI;
  * Created by 白振华 on 2017/1/19.
  */
 public class CityWeatherServer extends AbstractVerticle implements SignalHandler{
-    private EventBus eb;
     private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
+
+    private EventBus eb;
+    @Override
     public void start() throws Exception {
         vertx.executeBlocking(future -> {
             initWeatherSources();

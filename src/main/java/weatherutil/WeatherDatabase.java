@@ -147,7 +147,9 @@ public class WeatherDatabase {
             }
         }else{
             //create an empty one if not found
-            weatherDatabase.put(key, new WeatherData());
+            if(!weatherDatabase.containsKey(key)) {
+                weatherDatabase.put(key, new WeatherData());
+            }
         }
     }
     private String formCityKey(String[] s){
@@ -185,19 +187,33 @@ public class WeatherDatabase {
                 String city = path[1].trim();
                 for(String key : supportedCities.keySet()){
                     String [] k = key.split(",");
-                    if(k[0].trim().equalsIgnoreCase(province) &&
-                            k[1].trim().equalsIgnoreCase(city)){
-                        wd = getWeatherData("",province,city,"");
-                        break;
+                    if(k.length > 1) {
+                        if (k[0].trim().equalsIgnoreCase(province)) {
+                            if(k[1].trim().equalsIgnoreCase(city)) {
+                                wd = getWeatherData("", province, city, "");
+                                break;
+                            }else if(k.length > 4){
+                                if (k[3].equalsIgnoreCase(city)) {
+                                    wd = getWeatherData("", province, k[1], "");
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }else{
                 String city = path[0].trim();
                 for(String key : supportedCities.keySet()){
                     String [] k = key.split(",");
-                    if(k[1].trim().equalsIgnoreCase(city)){
-                        wd = getWeatherData("",k[0],k[1],"");
-                        break;
+                    if(k.length > 1) {
+                        if (k[1].trim().equalsIgnoreCase(city)) {
+                            wd = getWeatherData("", k[0], k[1], "");
+                            break;
+                        } else if(k.length > 4){
+                            if(k[3].equalsIgnoreCase(city)){
+                                wd = getWeatherData("", k[0], k[1], "");
+                            }
+                        }
                     }
                 }
             }
@@ -209,10 +225,11 @@ public class WeatherDatabase {
     public HashMap<String,WeatherData> readWeatherData(String filename){
         HashMap<String,WeatherData> wds = new HashMap<>();
         if(filename != null && !filename.isEmpty()) {
+            Reader in = null;
             try {
                 CSVFormat csvFileFormat = CSVFormat.EXCEL.withHeader("mappath","city",
                         "weather", "temp", "last_update").withDelimiter('\t');
-                Reader in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
+                in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
                 Iterable<CSVRecord> records = csvFileFormat.parse(in);
                 for (CSVRecord record : records) {
                     int recsize = record.size();
@@ -249,6 +266,14 @@ public class WeatherDatabase {
                 logger.debug("size:"+supportedCities.size());
             } catch (Exception e) {
                 logger.error("Supported cities not loaded from " + filename);
+            }finally {
+                try{
+                    if(in != null){
+                        in.close();
+                    }
+                }catch (Exception e){
+                    logger.error("Error closing weather dbfile");
+                }
             }
         }else{
             logger.error(filename+": invalid file");
@@ -305,8 +330,9 @@ public class WeatherDatabase {
         String filename = Config.getInstance().getWeatherConfig().get("citylist").toString();
         logger.info("Loading supported cities from:"+filename);
         if(filename != null && !filename.isEmpty()) {
+            Reader in = null;
             try {
-                Reader in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
+                in = new InputStreamReader(new FileInputStream(filename),"UTF-8");
                 Iterable<CSVRecord> records = CSVFormat.EXCEL
                         .withHeader("province","city","sprovince",
                                 "scity").parse(in);
@@ -340,6 +366,12 @@ public class WeatherDatabase {
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.error("Supported cities not loaded from " + filename);
+            } finally {
+                try {
+                    if(in != null) in.close();
+                }catch (Exception e){
+                    logger.error("file close Exception");
+                }
             }
         }else{
             logger.error("Supported cities not set:" + filename);

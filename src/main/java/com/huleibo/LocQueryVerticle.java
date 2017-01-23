@@ -164,7 +164,7 @@ public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
                         logger.warn("Server no reply for:"+request);
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
-                                .end("Error: Map server not ready!");
+                                .end("Error: Weather server not ready!");
                     }
                 });
             }else{

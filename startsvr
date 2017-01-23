@@ -5,7 +5,7 @@ if [ $? == 0 ]; then
     exit 10
 fi
 JVER=`java -version 2>&1`
-WEATHERSERVER=com.huleibo.WeatherServer
+WEATHERSERVER=com.huleibo.CityWeatherServer
 MAPSERVER=com.huleibo.CountryMapServer
 HTTPSERVER=com.huleibo.LocQueryVerticle
 echo $JVER|grep "\"1.8."

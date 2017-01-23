@@ -86,8 +86,13 @@ public class WeatherDatabaseTest {
 
     @Test
     public void getWeatherData() throws Exception {
-        String city = "Beijing";
+        String city = "akesu";
         WeatherData wd = WeatherDatabase.getInstance().getWeatherData(city);
+        //wd = WeatherDatabase.getInstance().getWeatherData(city);
+        assertTrue(wd.toString().contains("temperature"));
+        System.out.println("city="+wd.toString());
+        city = "Beijing";
+        wd = WeatherDatabase.getInstance().getWeatherData(city);
         System.out.println("city="+wd.toString());
         assertTrue(wd.toString().contains("temperature"));
         city = "weinan";

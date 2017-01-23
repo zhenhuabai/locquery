@@ -4,12 +4,12 @@
     "citylist": {
       "windows": "c:\\gis\\weather\\supportedcities.csv",
       "linux": "/opt/locquery/mapcities.2nd.csv",
-      "mac": "/Users/dbai/Downloads/gis/mapcities.test.csv"
+      "mac": "/Users/dbai/gis/locquery/supportedcities.csv"
     },
     "dbfile":{
       "windows": "c:\\gis\\tmp\\weatherdb.csv",
       "linux": "/opt/locquery/weatherdb.csv",
-      "mac": "/Users/dbai/Downloads/gis/weatherdb.csv"
+      "mac": "/Users/dbai/gis/locquery/weatherdb.csv"
     }
   },
   "maps" : [
@@ -29,7 +29,7 @@
       "translation": {
         "windows": "c:\\gis\\tmp\\chinese.csv",
         "linux": "chinese.csv",
-        "mac": "chinese.csv"
+        "mac": "/Users/dbai/gis/locquery/chinese.csv"
       }
     }
   ]
