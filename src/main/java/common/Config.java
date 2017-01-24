@@ -76,6 +76,10 @@ public class Config{
                 String datapath = ((JSONObject)jo.get("dbfile")).get(sys).toString();
                 jor.put("citylist",citypath);
                 jor.put("dbfile",datapath);
+                String refreshInterval = jo.get("syncinterval").toString();
+                if(refreshInterval != null){
+                    jor.put("syncinterval",refreshInterval);
+                }
             }
         }
         return jor;

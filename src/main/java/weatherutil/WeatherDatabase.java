@@ -44,6 +44,17 @@ public class WeatherDatabase {
     private int debugCounter = 0;
     private WeatherDatabase() {
         xz = new XinZhiTianQi();
+        String intervalS = Config.getInstance().getWeatherConfig().get("syncinterval").toString();
+        if(intervalS != null){
+            int interval = Integer.parseInt(intervalS);
+            if(interval < 2){
+                interval = 2;
+            } else if(interval > 12){
+                interval = 12;
+            }
+            cityRefreshInterval = interval * HOUR;
+        }
+        logger.info("Set city sync interval to:"+cityRefreshInterval/HOUR+" hours");
         loadSupportedCities();
         weatherDatabase = readWeatherData(Config.getInstance().getWeatherConfig().get("dbfile").toString());
         weatherRefresher.schedule(new java.util.TimerTask() {
@@ -139,6 +150,9 @@ public class WeatherDatabase {
             //insert time stamp
             long tick = System.currentTimeMillis();
             String ticks = String.valueOf(tick);
+            if (wd.data.containsKey("last")) {
+                wd.data.remove("last");
+            }
             wd.data.put("last",ticks);
             if(weatherDatabase.containsKey(key)){
                 weatherDatabase.replace(key, wd);

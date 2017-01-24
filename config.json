@@ -10,7 +10,8 @@
       "windows": "c:\\gis\\tmp\\weatherdb.csv",
       "linux": "/opt/locquery/weatherdb.csv",
       "mac": "/Users/dbai/gis/locquery/weatherdb.csv"
-    }
+    },
+    "syncinterval":1
   },
   "maps" : [
     {"name": "China",
