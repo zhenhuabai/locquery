@@ -94,8 +94,15 @@ public class CityWeatherServer extends AbstractVerticle implements SignalHandler
         });
     }
     private void initWeatherSources(){
-        WeatherDatabase.getInstance();//let's go
-
+        while(!WeatherDatabase.getInstance().isSyncing()) {
+            try {
+                Thread.sleep(1000);
+                logger.warn("WeatherDB is not syncing");
+            }catch (Exception e){
+                logger.error("Thread sleep error");
+            }
+        }
+        logger.info("WeatherDB sync started");
     }
 
     public void handle(Signal signalName) {

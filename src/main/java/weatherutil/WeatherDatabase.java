@@ -107,7 +107,7 @@ public class WeatherDatabase {
                  syncing = false;
                  logger.info("Weather database sync completed:"+ new Date().toString());
               }
-          },0, dbRefreshInterval);
+          },1000, dbRefreshInterval);
     }
     public void setDbRefreshInterval(long dbRefreshInterval){
         this.dbRefreshInterval = dbRefreshInterval;
@@ -140,6 +140,9 @@ public class WeatherDatabase {
             //insert time stamp
             long tick = System.currentTimeMillis();
             String ticks = String.valueOf(tick);
+            if(wd.data.containsKey("last")){
+                wd.data.remove("last");
+            }
             wd.data.put("last",ticks);
             if(weatherDatabase.containsKey(key)){
                 weatherDatabase.replace(key, wd);
