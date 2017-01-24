@@ -1,5 +1,6 @@
 package weatherutil;
 
+import common.Config;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.util.Recycler;
 import io.netty.util.Timer;
@@ -24,7 +25,16 @@ public final class XinZhiTianQi extends WeatherSource {
     private  boolean busy = false;
 
     public XinZhiTianQi(){
-        queryTemplate="https://api.thinkpage.cn/v3/weather/now.json?key=tefev55ybfpuqzh3&location=[&language=zh-Hans&unit=c";
+        JSONObject jo = Config.getInstance().getWeatherConfig();
+        String key = jo.get("key").toString().trim();
+        if(key == null||key.isEmpty()) {
+            logger.error("Weather source will not funtion!");
+            queryTemplate = "https://api.thinkpage.cn/v3/weather/now.json?key=tefev55ybfpuqzh3&location=[&language=zh-Hans&unit=c";
+        }else{
+            logger.error("Weather source key:"+key);
+            queryTemplate = "https://api.thinkpage.cn/v3/weather/now.json?key="
+            +key+"&location=[&language=zh-Hans&unit=c";
+        }
     }
     public XinZhiTianQi(String queryTemplate){
         this.queryTemplate = queryTemplate;
@@ -97,8 +107,22 @@ public final class XinZhiTianQi extends WeatherSource {
                 String lname = location.get("name").toString();
                 String weather = now.get("text").toString();
                 String temp = now.get("temperature").toString();
+                String path = location.get("path").toString();
+                String pathname = lname;
+                String [] dir = path.split(",");
+                switch (dir.length){
+                    case 4:
+                        pathname = dir[2]+","+dir[1];
+                        break;
+                    case 3:
+                        pathname = dir[2]+","+dir[1];
+                        break;
+                    default:
+                        break;
+                }
                 wd = new WeatherData();
                 wd.data.put("name", lname);
+                //wd.data.put("path", pathname);
                 wd.data.put("temperature", temp);
                 wd.data.put("weather", weather);
                 wd.data.put("update", update);

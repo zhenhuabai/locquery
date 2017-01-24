@@ -44,6 +44,7 @@ public class WeatherDatabase {
     private int debugCounter = 0;
     private WeatherDatabase() {
         xz = new XinZhiTianQi();
+        loadSyncInterval();
         loadSupportedCities();
         weatherDatabase = readWeatherData(Config.getInstance().getWeatherConfig().get("dbfile").toString());
         weatherRefresher.schedule(new java.util.TimerTask() {
@@ -172,51 +173,45 @@ public class WeatherDatabase {
         WeatherData wd = null;
         String key = formCityKey(new String[]{province,city});
         wd = weatherDatabase.get(key);
-        logger.debug("key="+key+",wd="+wd);
         return wd;
     }
     public WeatherData getWeatherData(String citypath){
-        WeatherData wd = new WeatherData();
-        wd.data.put("error","city not found");
+        WeatherData wd = null;
         if(citypath != null && !citypath.isEmpty()){
             String[] path = citypath.split("[ \t]");
             //province city
             if(path.length > 1) {
-                logger.debug(path[0]+"+"+path[1]);
-                String province = path[0].trim();
-                String city = path[1].trim();
+                String province = path[0].trim().toLowerCase();
+                String city = path[1].trim().toLowerCase();
                 for(String key : supportedCities.keySet()){
-                    String [] k = key.split(",");
-                    if(k.length > 1) {
-                        if (k[0].trim().equalsIgnoreCase(province)) {
-                            if(k[1].trim().equalsIgnoreCase(city)) {
-                                wd = getWeatherData("", province, city, "");
-                                break;
-                            }else if(k.length > 4){
-                                if (k[3].equalsIgnoreCase(city)) {
-                                    wd = getWeatherData("", province, k[1], "");
-                                    break;
-                                }
-                            }
+                    String[] k = supportedCities.get(key);
+                    if (k[0].replace(" ","").toLowerCase().contains(province)) {
+                        if(k[1].replace("[^a-zA-Z]","").toLowerCase().contains(city)) {
+                            wd = getWeatherData("", k[0], k[1], "");
+                            break;
+                        }else if(k[3].equalsIgnoreCase(city)) {
+                            wd = getWeatherData("", k[0], k[1], "");
+                            break;
                         }
                     }
                 }
             }else{
-                String city = path[0].trim();
+                String city = path[0].trim().toLowerCase();
                 for(String key : supportedCities.keySet()){
-                    String [] k = key.split(",");
-                    if(k.length > 1) {
-                        if (k[1].trim().equalsIgnoreCase(city)) {
-                            wd = getWeatherData("", k[0], k[1], "");
-                            break;
-                        } else if(k.length > 4){
-                            if(k[3].equalsIgnoreCase(city)){
-                                wd = getWeatherData("", k[0], k[1], "");
-                            }
-                        }
+                    String[] k = supportedCities.get(key);
+                    if(k[1].replace("[^a-zA-Z]","").toLowerCase().contains(city)) {
+                        wd = getWeatherData("", k[0], k[1], "");
+                        break;
+                    }else if(k[3].equalsIgnoreCase(city)) {
+                        wd = getWeatherData("", k[0], k[1], "");
+                        break;
                     }
                 }
             }
+        }
+        if (wd == null) {
+            wd = new WeatherData();
+            wd.data.put("error", "city not found");
         }
         return wd;
     }
@@ -408,5 +403,18 @@ public class WeatherDatabase {
             ret = "shanxi";
         }
         return first;
+    }
+    private void loadSyncInterval(){
+        String syncInterval = Config.getInstance().getWeatherConfig().get("syncinterval").toString();
+        if(syncInterval != null && !syncInterval.isEmpty()) {
+            int interval = Integer.parseInt(syncInterval);
+            if (interval < 2) {
+                interval = 2;
+            } else if (interval > 12) {
+                interval = 12;
+            }
+            cityRefreshInterval = interval * HOUR;
+        }
+        logger.info("Refresh interval set to " + cityRefreshInterval/HOUR + " hours.");
     }
 }

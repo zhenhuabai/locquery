@@ -1,5 +1,5 @@
 {
-  "http.port" : 18080,
+  "http.port" : 28080,
   "weather" : {
     "citylist": {
       "windows": "c:\\gis\\weather\\supportedcities.csv",
@@ -10,7 +10,11 @@
       "windows": "c:\\gis\\tmp\\weatherdb.csv",
       "linux": "/opt/locquery/weatherdb.csv",
       "mac": "/Users/dbai/gis/locquery/weatherdb.csv"
-    }
+    },
+    "sourcekeys":{
+      "xinzhi": "tefev55ybfpuqzh3"
+    },
+    "syncinterval": 2
   },
   "maps" : [
     {"name": "China",

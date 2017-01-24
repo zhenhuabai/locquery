@@ -74,8 +74,14 @@ public class Config{
             if(jo != null){
                 String citypath = ((JSONObject)jo.get("citylist")).get(sys).toString();
                 String datapath = ((JSONObject)jo.get("dbfile")).get(sys).toString();
+                String xinzhikey = ((JSONObject)jo.get("sourcekeys")).get("xinzhi").toString();
+                String syncInterval = jo.get("syncinterval").toString();
                 jor.put("citylist",citypath);
                 jor.put("dbfile",datapath);
+                jor.put("key",xinzhikey);
+                if(syncInterval != null){
+                    jor.put("syncinterval",syncInterval);
+                }
             }
         }
         return jor;

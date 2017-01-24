@@ -3,8 +3,6 @@ package com.huleibo;
 import common.JPUtil;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.http.HttpServerRequest;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
@@ -19,7 +17,7 @@ import java.net.URI;
  * Created by 白振华 on 2017/1/19.
  */
 public class CityWeatherServer extends AbstractVerticle implements SignalHandler{
-    private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
+    private static final Logger logger = LogManager.getLogger(CityWeatherServer.class);
 
     private EventBus eb;
     @Override
