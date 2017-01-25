@@ -1,0 +1,16 @@
+#!/bin/bash
+OS="`uname`"
+case $OS in
+  Linux)
+      echo Stopping app in Linux
+      echo   ps -eo pid,cmd|grep huleibo|grep -v grep|awk '{print $1}'|xargs kill -s SIGTERM
+    ;;
+  CYGWIN*) 
+      echo Stopping app in Cygwin...
+      ps |grep java|grep -v grep|awk '{print $1}'|xargs kill -s SIGTERM
+    ;;
+
+  *) 
+      echo "don't know how to stop in $OS"
+     ;;
+esac
