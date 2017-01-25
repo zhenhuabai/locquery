@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  */
 public class WeatherDatabase {
     public static boolean debug = false;
+    private int progressUpdateCounter = 0;
     private static final Logger logger = LogManager.getLogger(WeatherDatabase.class);
     private static WeatherDatabase ourInstance = new WeatherDatabase();
     private boolean syncing = false;
@@ -38,7 +39,7 @@ public class WeatherDatabase {
     private HashMap<String, String[]> supportedCities = new HashMap<>();
 
     private static final long HOUR = 3600 * 1000;
-    private long dbRefreshInterval = 2 * HOUR;
+    private long dbRefreshInterval = (long)1.5 * HOUR;
     private long cityRefreshInterval = 4 * HOUR;
     private XinZhiTianQi xz;
     private int debugCounter = 0;
@@ -54,52 +55,59 @@ public class WeatherDatabase {
                   syncing = true;
                   logger.info("Weather database sync starting..."+new Date().toString());
                   supportedCities.forEach((key, city)->{
-                      if(debug){
-                          debugCounter++;
-                          if(debugCounter >2){
-                              syncing = false;
-                              return;
-                          }
-                      }
-                      while (!xz.isAvailable()) {
-                          try {
-                              Thread.sleep(1000);
-                          } catch (Exception e) {
-                              logger.error("Sleep Exception!!");
-                          }
-                      }
-                      if (shouldUpdate(key)) {
-                          String search = getSearchParams(city);
-                          if (xz.isAvailable()) {
-                              logger.debug("search:" + search);
-                              xz.getData(search, response -> {
-                                  response.handler(
-                                          body -> {
-                                              WeatherData wd = xz.getWeatherData(body.toString());
-                                              handleWeatherData(key, wd);
-                                              if(wd != null) {
-                                                  logger.info(wd.toString());
-                                              }else{
-                                                  logger.error("Not found:"+search);
-                                              }
-                                              synchronized (o){
-                                                  o.notify();
-                                              }
-                                          });
-                              });
-                              synchronized (o){
-                                  try{
-                                      o.wait();
-                                  }catch (Exception e){
-                                      logger.error("Exception unexpected");
-                                  }
+                      try {
+                          if (debug) {
+                              debugCounter++;
+                              if (debugCounter > 2) {
+                                  syncing = false;
+                                  return;
                               }
-                              logger.debug("Waiting for completion...");
-                          } else {
-                              logger.warn("Source unavailable!");
                           }
-                      }else{
-                          logger.info(key+" update time not due");
+                          while (!xz.isAvailable()) {
+                              try {
+                                  Thread.sleep(1000);
+                              } catch (Exception e) {
+                                  logger.error("Sleep Exception!!");
+                              }
+                          }
+                          if (shouldUpdate(key)) {
+                              String search = getSearchParams(city);
+                              if (xz.isAvailable()) {
+                                  logger.debug("search:" + search);
+                                  xz.getData(search, response -> {
+                                      response.handler(
+                                              body -> {
+                                                  WeatherData wd = xz.getWeatherData(body.toString());
+                                                  handleWeatherData(key, wd);
+                                                  if (wd != null) {
+                                                      logger.info(wd.toString());
+                                                  } else {
+                                                      logger.error("Not found:" + search);
+                                                  }
+                                                  synchronized (o) {
+                                                      o.notifyAll();
+                                                  }
+                                              });
+                                  });
+                                  logger.debug("Waiting for completion...");
+                                  synchronized (o) {
+                                      try {
+                                          o.wait(30000);
+                                      } catch (Exception e) {
+                                          e.printStackTrace();
+                                          logger.error("Exception unexpected");
+                                      }
+                                  }
+                                  logger.debug("OK for next...");
+                              } else {
+                                  logger.warn("Source unavailable!");
+                              }
+                          } else {
+                              logger.info(key + " update time not due");
+                          }
+                      }catch (Exception e){
+                          e.printStackTrace();
+                          logger.error("Severe problem happened processing:"+key);
                       }
                   });
                  writeWeatherData(Config.getInstance().getWeatherConfig()
@@ -155,6 +163,7 @@ public class WeatherDatabase {
                 weatherDatabase.put(key, new WeatherData());
             }
         }
+        writeWeatherDataInProgress();
     }
     private String formCityKey(String[] s){
         StringBuffer sb = new StringBuffer();
@@ -277,6 +286,15 @@ public class WeatherDatabase {
             logger.error(filename+": invalid file");
         }
         return wds;
+    }
+    public void writeWeatherDataInProgress(){
+        if(progressUpdateCounter > 40){
+            progressUpdateCounter = 0;
+            writeWeatherData(Config.getInstance().getWeatherConfig().get("dbfile").toString(), weatherDatabase);
+            logger.debug("Updated weather db in between");
+        }else{
+            progressUpdateCounter++;
+        }
     }
     public void writeWeatherData(String file, HashMap<String,WeatherData> wds){
         CSVPrinter csvFilePrinter = null;
@@ -420,4 +438,5 @@ public class WeatherDatabase {
         }
         logger.info("Refresh interval set to " + cityRefreshInterval/HOUR + " hours.");
     }
+
 }

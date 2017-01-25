@@ -30,7 +30,7 @@ public class WeatherDatabaseTest {
     }
     @Test
     public void csvFileReader() throws Exception {
-        String file = "c:\\gis\\tmp\\temp.csv";
+        String file = "temp.csv";
         HashMap<String, WeatherData> wds = WeatherDatabase.getInstance().readWeatherData(file);
         WeatherData wd = wds.get("jiangsu,nanjing");
         assertEquals(wd.data.get("name"), "南京");
@@ -40,7 +40,7 @@ public class WeatherDatabaseTest {
     }
     @Test
     public void csvFileWrite() throws Exception {
-        String file = "c:\\gis\\tmp\\temp.csv";
+        String file = "temp.csv";
         WeatherData wd = new WeatherData();
         wd.data.put("name", "南京");
         wd.data.put("weather", "晴");
