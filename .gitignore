@@ -2,6 +2,7 @@
 .idea
 *~
 target
+temp.csv
 locquery.iml
 out
 logs/

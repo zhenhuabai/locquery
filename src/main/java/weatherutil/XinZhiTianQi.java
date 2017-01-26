@@ -46,13 +46,14 @@ public final class XinZhiTianQi extends WeatherSource {
 
     @Override
     public void getData(double lon, double lat, Handler<HttpClientResponse> handler) {
-        busy = true;
+        busy = false;
     }
 
     @Override
     public void getData(String cityname, Handler<HttpClientResponse> handler) {
         if(!busy) {
             busy = true;
+            vertx.setTimer(11000, id->{busy = false;});
             String validCityname = validateCityName(cityname);
             logger.debug("handling:"+validCityname);
             if (validCityname != null && !validCityname.isEmpty()) {
@@ -132,7 +133,6 @@ public final class XinZhiTianQi extends WeatherSource {
         }catch (Exception e){
             e.printStackTrace();
         }
-        vertx.setTimer(10000, id->{busy = false;});
         return wd;
     }
 }

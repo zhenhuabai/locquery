@@ -1,47 +1,47 @@
 mappath	city	weather	temp	last_update
-guangxi,hezhou	贺州	晴	7	2017-01-23T01:20:00+08:00
-hubei,huanggang	黄冈	晴	3	2017-01-23T01:15:00+08:00
-gansu,lanzhou	兰州	晴	-7	2017-01-23T01:00:00+08:00
-chongqing,chongqing	重庆	阴	10	2017-01-23T01:25:00+08:00
-sichuan,mianyang	绵阳	阴	6	2017-01-23T01:15:00+08:00
-hunan,hengyang	衡阳	晴	4	2017-01-23T01:05:00+08:00
-guangdong,jieyang	揭阳	晴	9	2017-01-23T01:25:00+08:00
-beijing,beijing	北京	晴	-8	2017-01-23T01:25:00+08:00
-guangdong,meizhou	梅州	多云	8	2017-01-23T01:25:00+08:00
-shaanxi,xianyang	咸阳	多云	-4	2017-01-23T01:20:00+08:00
-hebei,handan	邯郸	晴	-4	2017-01-23T01:25:00+08:00
-hubei,suizhou shi	随州	阴	1	2017-01-23T01:25:00+08:00
-yunnan,nujiang lisu	怒江	晴	11	2017-01-23T01:25:00+08:00
-guizhou,guiyang	贵阳	多云	5	2017-01-23T01:15:00+08:00
-shandong,zibo	淄博	晴	-10	2017-01-23T01:15:00+08:00
-anhui,suzhou	宿州	晴	-1	2017-01-23T01:15:00+08:00
-guizhou,qiannan buyei and miao	都匀	多云	7	2017-01-23T01:15:00+08:00
-hubei,xiaogan	孝感	多云	4	2017-01-23T01:15:00+08:00
-xinjiang uygur,kashgar	喀什	晴	-10	2017-01-23T01:20:00+08:00
-liaoning,benxi	本溪	晴	-20	2017-01-23T01:10:00+08:00
-shanxi,yuncheng	运城	晴	-5	2017-01-23T01:25:00+08:00
-jiangxi,pingxiang	萍乡	晴	4	2017-01-23T01:25:00+08:00
-yunnan,chuxiong yi	楚雄	晴	9	2017-01-23T01:25:00+08:00
-hebei,qinhuangdao	秦皇岛	晴	-17	2017-01-23T01:25:00+08:00
-shaanxi,baoji	宝鸡	多云	-1	2017-01-23T01:20:00+08:00
-fujian,xiamen	厦门	晴	9	2017-01-23T01:25:00+08:00
-henan,jiyuan shi	济源	多云	-5	2017-01-23T01:15:00+08:00
-guangxi,guigang	贵港	晴	10	2017-01-23T01:20:00+08:00
-liaoning,panjin	盘锦	晴	-15	2017-01-23T01:10:00+08:00
-guangxi,fangchenggang	防城港	晴	13	2017-01-23T01:10:00+08:00
-hebei,shijiazhuang	石家庄	晴	-5	2017-01-23T01:25:00+08:00
-henan,xinxiang	新乡	晴	-2	2017-01-23T00:55:00+08:00
-guangdong,shantou	汕头	晴	12	2017-01-23T01:25:00+08:00
-guangdong,shanwei	汕尾	晴	13	2017-01-23T01:35:00+08:00
+guangxi,hezhou	贺州	晴	10	2017-01-26T09:50:00+08:00
+hubei,huanggang	黄冈	晴	7	2017-01-26T09:45:00+08:00
+gansu,lanzhou	兰州	浮尘	1	2017-01-26T10:10:00+08:00
+chongqing,chongqing	重庆	阴	10	2017-01-26T09:45:00+08:00
+sichuan,mianyang	绵阳	多云	9	2017-01-26T09:45:00+08:00
+hunan,hengyang	衡阳	多云	7	2017-01-26T09:00:00+08:00
+guangdong,jieyang	揭阳	晴	15	2017-01-26T09:45:00+08:00
+beijing,beijing	北京	阴	-1	2017-01-26T09:45:00+08:00
+guangdong,meizhou	梅州	多云	13	2017-01-26T09:45:00+08:00
+shaanxi,xianyang	咸阳	多云	7	2017-01-26T09:40:00+08:00
+hebei,handan	邯郸	多云	3	2017-01-26T09:45:00+08:00
+hubei,suizhou shi	随州	多云	6	2017-01-26T09:15:00+08:00
+yunnan,nujiang lisu	怒江	晴	11	2017-01-26T09:55:00+08:00
+guizhou,guiyang	贵阳	阴	9	2017-01-26T09:45:00+08:00
+shandong,zibo	淄博	多云	8	2017-01-26T09:45:00+08:00
+anhui,suzhou	宿州	多云	6	2017-01-26T09:45:00+08:00
+guizhou,qiannan buyei and miao	都匀	多云	8	2017-01-26T09:45:00+08:00
+hubei,xiaogan	孝感	晴	9	2017-01-26T09:45:00+08:00
+xinjiang uygur,kashgar	喀什	中雪	-4	2017-01-26T09:40:00+08:00
+liaoning,benxi	本溪	阴	0	2017-01-26T09:40:00+08:00
+shanxi,yuncheng	运城	多云	4	2017-01-26T09:55:00+08:00
+jiangxi,pingxiang	萍乡	晴	8	2017-01-26T09:55:00+08:00
+yunnan,chuxiong yi	楚雄	多云	9	2017-01-26T09:45:00+08:00
+hebei,qinhuangdao	秦皇岛	雨夹雪	1	2017-01-26T09:45:00+08:00
+shaanxi,baoji	宝鸡	晴	4	2017-01-26T09:40:00+08:00
+fujian,xiamen	厦门	多云	13	2017-01-26T09:45:00+08:00
+henan,jiyuan shi	济源	多云	5	2017-01-26T09:55:00+08:00
+guangxi,guigang	贵港	晴	16	2017-01-26T09:40:00+08:00
+liaoning,panjin	盘锦	阴	3	2017-01-26T09:40:00+08:00
+guangxi,fangchenggang	防城港	晴	18	2017-01-26T09:40:00+08:00
+hebei,shijiazhuang	石家庄	阴	-4	2017-01-26T09:45:00+08:00
+henan,xinxiang	新乡	多云	5	2017-01-26T09:55:00+08:00
+guangdong,shantou	汕头	多云	16	2017-01-26T09:45:00+08:00
+guangdong,shanwei	汕尾	多云	16	2017-01-26T09:55:00+08:00
 yunnan,dêqên tibetan	N/A	N/A	N/A	N/A
-heilongjiang,daxing'anling	大兴安岭	晴	-26	2017-01-23T01:20:00+08:00
-ningxia hui,yinchuan	银川	晴	-6	2017-01-23T01:05:00+08:00
-hebei,zhangjiakou	张家口	晴	-13	2017-01-23T01:25:00+08:00
-hubei,qianjiang	潜江	晴	2	2017-01-23T01:35:00+08:00
-jilin,siping	四平	晴	-21	2017-01-23T01:05:00+08:00
-gansu,linxia hui	临夏	多云	-9	2017-01-23T01:30:00+08:00
-fujian,sanming	三明	晴	5	2017-01-23T01:40:00+08:00
-hunan,zhangjiajie	张家界	晴	5	2017-01-23T01:00:00+08:00
+heilongjiang,daxing'anling	大兴安岭	多云	-16	2017-01-26T09:40:00+08:00
+ningxia hui,yinchuan	银川	多云	-2	2017-01-26T09:05:00+08:00
+hebei,zhangjiakou	张家口	多云	0	2017-01-26T09:45:00+08:00
+hubei,qianjiang	潜江	晴	8	2017-01-26T09:45:00+08:00
+jilin,siping	四平	小雪	1	2017-01-26T09:00:00+08:00
+gansu,linxia hui	临夏	多云	-2	2017-01-26T09:40:00+08:00
+fujian,sanming	三明	多云	10	2017-01-26T09:55:00+08:00
+hunan,zhangjiajie	张家界	晴	3	2017-01-26T09:05:00+08:00
 qinghai,xining	西宁	晴	-13	2017-01-23T01:35:00+08:00
 hubei,jingmen	荆门	晴	7	2017-01-23T01:35:00+08:00
 guangxi,guilin	桂林	晴	10	2017-01-23T01:20:00+08:00

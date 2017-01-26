@@ -65,6 +65,7 @@ public class WeatherDatabase {
                           }
                           while (!xz.isAvailable()) {
                               try {
+                                  logger.debug("Weather source is not available now!");
                                   Thread.sleep(1000);
                               } catch (Exception e) {
                                   logger.error("Sleep Exception!!");
