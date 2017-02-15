@@ -97,6 +97,10 @@
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.7" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.7" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-csv:1.4" level="project" />
+    <orderEntry type="library" name="Maven: io.vertx:vertx-mongo-client:3.3.3" level="project" />
+    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-async:3.2.2" level="project" />
+    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-core:3.2.2" level="project" />
+    <orderEntry type="library" name="Maven: org.mongodb:bson:3.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.hsqldb:hsqldb:2.3.4" level="project" />
   </component>
 </module>

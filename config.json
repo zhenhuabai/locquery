@@ -1,5 +1,11 @@
 {
   "http.port" : 28080,
+  "locationmanager" : {
+
+  },
+  "locationanalyzer" : {
+
+  },
   "weather" : {
     "citylist": {
       "windows": "c:\\gis\\weather\\supportedcities.csv",
