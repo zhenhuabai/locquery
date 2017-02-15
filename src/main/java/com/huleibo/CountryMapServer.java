@@ -201,4 +201,9 @@ public class CountryMapServer extends AbstractVerticle implements SignalHandler{
         }
         return translated;
     }
+    public void stopServer(){
+        eb.close(handler->{
+            logger.debug("stopped Map Server");
+        });
+    }
 }

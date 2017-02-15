@@ -119,4 +119,9 @@ public class CityWeatherServer extends AbstractVerticle implements SignalHandler
     private void installSignal(){
         Signal.handle(new Signal("TERM"), this);
     }
+    public void stopServer(){
+        eb.close(handler->{
+            logger.debug("stopped CityWeather Server");
+        });
+    }
 }

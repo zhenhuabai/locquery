@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import common.Config;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -66,6 +68,15 @@ public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
         router.get("/api/city").handler(this::remoteQueryCity);
         router.route("/api/weather*").handler(BodyHandler.create());
         router.get("/api/weather").handler(this::remoteQueryWeather);
+        router.route("/api/userlocation*").handler(BodyHandler.create());
+        router.post("/api/userlocation").handler(this::uploadUserLocation);
+        /*
+        router.route("/api/userlocal*").handler(BodyHandler.create());
+        router.put("/api/userlocal").handler(this::setUserLocal);
+        router.get("/api/userlocal").handler(this::isUserLocal);
+        router.route("/api/userroaming*").handler(BodyHandler.create());
+        router.get("/api/userroaming").handler(this::isUserRoaming);
+        */
 
         theServer = vertx.createHttpServer();
                 theServer
@@ -177,10 +188,65 @@ public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
             routingContext.response().setStatusCode(400).end();
         }
     }
+    public void uploadUserLocation(RoutingContext routingContext) {
+        try {
+            String request = routingContext.request().absoluteURI();
+            logger.debug("handling uploadUserLocation");
+            if(!request.isEmpty()) {
+                String body = routingContext.getBodyAsString();
+                logger.debug("body string="+body);
+                JsonObject jo = routingContext.getBodyAsJson();
+                String userid = jo.getString("userid");
+                String lat = jo.getString("lat");
+                String lon = jo.getString("lon");
+                String time = jo.getString("timestamp");
+                logger.debug("userid = "+userid);
+                logger.debug("lat = "+lat);
+                logger.debug("lon = "+lon);
+                logger.debug("time = "+time);
+                routingContext.response().setStatusCode(200)
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end("OK");
+                /*
+                eb.send("Server:Weather", request, reply -> {
+                    if (reply.succeeded()) {
+                        logger.info(String.format("[%s]->%s", request, reply.result().body().toString()));
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    } else {
+                        logger.warn("Server no reply for:"+request);
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end("Error: Weather server not ready!");
+                    }
+                });
+                */
+            }else{
+                logger.warn("Illegal parameters");
+                routingContext.response().setStatusCode(400).end();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.warn("Problem handling request:"+routingContext.request().toString());
+            routingContext.response().setStatusCode(400).end();
+        }
+    }
     private void pingService(){
         int port = config().getInteger("http.port", 8080);
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lat=109.594513&lon=34.644989",
                 response -> logger.info("Service Ready")
                 );
+    }
+
+    public void stop(){
+        if(eb != null) {
+            eb.close(handler -> {
+                logger.debug("stopped Http Server");
+            });
+        }
+        if(theServer != null) {
+            theServer.close();
+        }
     }
 }
