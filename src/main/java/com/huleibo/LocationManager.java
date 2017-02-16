@@ -1,35 +1,30 @@
 package com.huleibo;
 
+import common.Config;
+import common.MongoDbHelper;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
 
 /**
  * Created by 白振华 on 2017/2/8.
+ * This class handles location related operations, like uploading location,
+ * setting user local, retrieving user local, etc.
+ * This instance will run as a single process, so facilitating multiple instance
+ * in the future.
  */
 public class LocationManager extends AbstractVerticle {
     private static final Logger logger = LogManager.getLogger(LocationManager.class);
     private EventBus eb;
+    private MongoClient mongoClient = null;
 
     public void init(){
         logger.debug("initializing database");
-        JsonObject config = new JsonObject();
-        config.put("db_name","test");
-        config.put("connection_string","mongodb://localhost:27017");
-        MongoClient mongoClient = MongoClient.createShared(vertx, config);
-        JsonObject document = new JsonObject().put("title", "The Hobbit2");
-        mongoClient.insert("books", document, res -> {
-            if (res.succeeded()) {
-                String id = res.result();
-                logger.debug("Saved book with id " + id);
-            } else {
-                logger.debug("insert not ok");
-                res.cause().printStackTrace();
-            }
-        });
+        mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
     }
     @Override
     public void start() throws Exception {
@@ -47,6 +42,7 @@ public class LocationManager extends AbstractVerticle {
     }
     @Override
     public void stop(){
+        mongoClient.close();
         eb.close(handler->{
             logger.debug("stopped location manager");
         });
