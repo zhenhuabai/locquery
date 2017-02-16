@@ -32,6 +32,7 @@ import java.util.Date;
 public class LocQueryVerticleTest {
     @Test
     public void uploadUserLocation(TestContext context) throws Exception {
+        Config.getInstance().getLocationManagerConfig();
         final Async async = context.async();
         JsonObject jo = new JsonObject();
         jo.put("userid","10001");

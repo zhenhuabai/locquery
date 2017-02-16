@@ -1,7 +1,8 @@
 {
   "http.port" : 28080,
   "locationmanager" : {
-
+    "mongodburl": "mongodb://localhost:27017",
+    "database": "loctestdb"
   },
   "locationanalyzer" : {
 

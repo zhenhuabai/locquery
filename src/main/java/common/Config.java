@@ -2,10 +2,7 @@ package common;
 
 import io.vertx.core.json.JsonObject;
 
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.Set;
 
 import org.apache.logging.log4j.Level;
@@ -30,7 +27,7 @@ public class Config{
     }
 
     private static final String CONFIGFILE = "./config.json";
-    private JSONObject config;
+    private JSONObject config = null;
     private Config() {
         getConfig();
     }
@@ -41,10 +38,9 @@ public class Config{
         if (config == null) {
             JSONParser parser = new JSONParser();
             try {
-
                 Reader in = new InputStreamReader(new FileInputStream(CONFIGFILE),"UTF-8");
                 config = (JSONObject)parser.parse(in);
-                logger.info("Result:"+config.toJSONString());
+                logger.info("Result - :"+config.toJSONString());
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -125,6 +121,14 @@ public class Config{
         }
         logger.info("Result:"+jsar.toJSONString());
         return jsar;
+    }
+    public JSONObject getLocationManagerConfig(){
+        JSONObject jo = new JSONObject();
+        if (config != null){
+            jo = (JSONObject)((JSONObject)config.get("locationmanager")).clone();
+        }
+        logger.info("LocationManagerConfig:"+jo.toJSONString());
+        return jo;
     }
     public static void enableLog(){
         LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
