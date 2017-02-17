@@ -16,10 +16,9 @@ import java.net.URI;
 /**
  * Created by 白振华 on 2017/1/19.
  */
-public class CityWeatherServer extends AbstractVerticle implements SignalHandler{
+public class CityWeatherServer extends LocApp{
     private static final Logger logger = LogManager.getLogger(CityWeatherServer.class);
 
-    private EventBus eb;
     @Override
     public void start() throws Exception {
         vertx.executeBlocking(future -> {
@@ -115,9 +114,6 @@ public class CityWeatherServer extends AbstractVerticle implements SignalHandler
                 });
             }
         }
-    }
-    private void installSignal(){
-        Signal.handle(new Signal("TERM"), this);
     }
     public void stopServer(){
         eb.close(handler->{

@@ -1,6 +1,7 @@
 package common;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -21,10 +22,12 @@ import static org.junit.Assert.*;
 @RunWith(VertxUnitRunner.class)
 public class MongoDbHelperTest {
     MongoClient client = null;
+    private long UID = 1001001;
     private Vertx vertx;
     @Before
     public void setUp() throws Exception {
         Config.enableLog();
+        Config.enableDebug(true);
         vertx = Vertx.vertx();
         client = MongoDbHelper.getInstance().requestClient(vertx);
     }
@@ -38,10 +41,10 @@ public class MongoDbHelperTest {
     @Test
     public void putUserLocation(TestContext context) throws Exception {
         final Async async = context.async();
-        UserLocation ul = new UserLocation(10001,38.2,108.33,System.currentTimeMillis());
+        UserLocation ul = new UserLocation(UID,38.2,108.33,System.currentTimeMillis());
         MongoDbHelper.putUserLocation(client,ul, res->{
             if(res.succeeded()) {
-                context.assertTrue(true);
+                context.assertTrue(!res.result().isEmpty());
                 async.complete();
             } else {
                 context.assertTrue(false);
