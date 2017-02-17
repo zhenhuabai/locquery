@@ -35,23 +35,22 @@ public class LocQueryVerticleTest {
         Config.getInstance().getLocationManagerConfig();
         final Async async = context.async();
         JsonObject jo = new JsonObject();
-        jo.put("userid","10001");
-        jo.put("lat","38.01");
-        jo.put("lon","108.2");
-        jo.put("timestamp",new Date().toString());
+        jo.put("uid",20001);
+        jo.put("lat",38.01);
+        jo.put("lon",128.2);
+        jo.put("timestamp",System.currentTimeMillis());
         String val = jo.encode();
         System.out.println("posting:"+val);
         vertx.createHttpClient().post(port, "localhost", "/api/userlocation",
                 response -> {
                     response.handler(body -> {
-                        context.assertTrue(body.toString().contains("OK"));
+                        context.assertTrue(body.toJsonObject().getBoolean("result"));
                         async.complete();
                     });
                 })
                 .putHeader("Content-Length", val.length() + "")
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .write(val).end();
-
     }
 
     private Vertx vertx;
@@ -72,6 +71,8 @@ public class LocQueryVerticleTest {
                 .setConfig(new JsonObject().put("debug", 1)
                 );
         vertx.deployVerticle(CountryMapServer.class.getName(), options,
+                context.asyncAssertSuccess());
+        vertx.deployVerticle(LocationManager.class.getName(),
                 context.asyncAssertSuccess());
         /*
         vertx.deployVerticle(CityWeatherServer.class.getName(),

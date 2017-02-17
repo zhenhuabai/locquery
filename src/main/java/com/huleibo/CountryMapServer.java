@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Created by 白振华 on 2017/1/11.
  */
-public class CountryMapServer extends AbstractVerticle implements SignalHandler{
+public class CountryMapServer extends LocApp{
     public void handle(Signal signalName) {
         logger.warn("Reveived signal:"+signalName.toString());
         if(signalName.getName().equalsIgnoreCase("term")){
@@ -38,13 +38,9 @@ public class CountryMapServer extends AbstractVerticle implements SignalHandler{
             }
         }
     }
-    private void installSignal(){
-        Signal.handle(new Signal("TERM"), this);
-    }
     private int port;
     private String mappath;
     public static boolean inDebug = false;
-    private EventBus eb;
     private String mapLname;
     private boolean translationLoaded = false;
     private static Map<String,String> translation = new HashMap<String, String>();

@@ -18,6 +18,16 @@ public class UserLocation {
     public double lat;
     public long timestamp;
     HashMap<String, Object> mapper = new HashMap<>();
+    public UserLocation(JsonObject param){
+        long uid = param.getLong("uid");
+        this.userid = uid;
+        double tmp = param.getDouble("lon");
+        this.lon = tmp;
+        tmp = param.getDouble("lat");
+        this.lat = tmp;
+        long timestamp = param.getLong("timestamp");
+        this.timestamp = timestamp;
+    }
     public UserLocation(long uid, double lon, double lat, long timestamp){
         this.userid = uid;
         this.lon = lon;
@@ -26,7 +36,7 @@ public class UserLocation {
     }
     public JsonObject toJsonObject(){
         mapper.clear();
-        mapper.put("userid",userid);
+        mapper.put("uid",userid);
         mapper.put("lon",lon);
         mapper.put("lat",lat);
         mapper.put("timestamp",timestamp);

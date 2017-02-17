@@ -14,6 +14,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import locsvc.CityQuery;
+import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sun.misc.Signal;
@@ -25,7 +26,7 @@ import java.io.StringWriter;
 /**
  * Created by 白振华 on 2017/1/7.
  */
-public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
+public class LocQueryVerticle extends LocApp {
     private HttpServer theServer;
     public void handle(Signal signalName) {
         logger.warn("Reveived signal:"+signalName.toString());
@@ -35,9 +36,6 @@ public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
                 theServer.close();
             }
         }
-    }
-    private void installSignal(){
-        Signal.handle(new Signal("TERM"), this);
     }
     private static final Logger logger = LogManager.getLogger(LocQueryVerticle.class);
     //private final Logger Log = Logger.getLogger(this.getClass().getName());
@@ -192,36 +190,25 @@ public class LocQueryVerticle extends AbstractVerticle implements SignalHandler{
         try {
             String request = routingContext.request().absoluteURI();
             logger.debug("handling uploadUserLocation");
-            if(!request.isEmpty()) {
+            if(!request.contains("uid")) {
                 String body = routingContext.getBodyAsString();
                 logger.debug("body string="+body);
                 JsonObject jo = routingContext.getBodyAsJson();
-                String userid = jo.getString("userid");
-                String lat = jo.getString("lat");
-                String lon = jo.getString("lon");
-                String time = jo.getString("timestamp");
-                logger.debug("userid = "+userid);
-                logger.debug("lat = "+lat);
-                logger.debug("lon = "+lon);
-                logger.debug("time = "+time);
-                routingContext.response().setStatusCode(200)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end("OK");
-                /*
-                eb.send("Server:Weather", request, reply -> {
+                JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
+                logger.debug("upload = "+jo.toString());
+                eb.send("Server:LocationManager", upload.toString(), reply -> {
                     if (reply.succeeded()) {
-                        logger.info(String.format("[%s]->%s", request, reply.result().body().toString()));
+                        logger.info(String.format("[%s]->%s", "upload", reply.result().body().toString()));
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
                                 .end(reply.result().body().toString());
                     } else {
-                        logger.warn("Server no reply for:"+request);
+                        logger.warn("Server no reply for:upload");
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
                                 .end("Error: Weather server not ready!");
                     }
                 });
-                */
             }else{
                 logger.warn("Illegal parameters");
                 routingContext.response().setStatusCode(400).end();

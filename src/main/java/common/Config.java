@@ -20,6 +20,7 @@ import org.json.simple.parser.JSONParser;
 public class Config{
 
     private static final Logger logger = LogManager.getLogger(Config.class);
+    private static boolean DEBUG = false;
     private static Config ourInstance = new Config();
 
     public static Config getInstance() {
@@ -136,5 +137,11 @@ public class Config{
         LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
         loggerConfig.setLevel(Level.ALL);
         ctx.updateLoggers();
+    }
+    public static void enableDebug(boolean enable){
+        DEBUG = enable;
+    }
+    public static boolean isDebug(){
+        return DEBUG;
     }
 }

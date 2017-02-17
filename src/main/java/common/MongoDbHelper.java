@@ -24,14 +24,12 @@ public class MongoDbHelper {
     }
 
     private static final String DBKEY = "database";
+    private static final String DBGDBKEY = "dbgdatabase";
     private static final String DBURLKEY = "mongodburl";
     public static final String COLLECTION_USERLOCATION = "userlocations";
     private String dbName = null;
     private String dbUrl = null;
     private JSONObject joc = null;
-    //TODO investigation! why the static below causes joc init in constructor failure,
-    //joc is still null in request!
-    //private static JSONObject joc = null;
 
     private MongoDbHelper() {
         joc = Config.getInstance().getLocationManagerConfig();
@@ -41,10 +39,15 @@ public class MongoDbHelper {
     }
 
     public MongoClient requestClient(Vertx vertx, String source){
-        //joc = Config.getInstance().getLocationManagerConfig();
         MongoClient client = null;
-        if(joc.containsKey(DBKEY)){
-            dbName = joc.get(DBKEY).toString();
+        if(Config.isDebug()){
+            if (joc.containsKey(DBGDBKEY)) {
+                dbName = joc.get(DBGDBKEY).toString();
+            }
+        }else {
+            if (joc.containsKey(DBKEY)) {
+                dbName = joc.get(DBKEY).toString();
+            }
         }
         if(joc.containsKey(DBURLKEY)){
             dbUrl = joc.get(DBURLKEY).toString();
@@ -53,6 +56,7 @@ public class MongoDbHelper {
                 dbUrl == null || dbUrl.isEmpty()){
             logger.error("Database not configured properly");
         } else {
+            logger.info("mongourl:"+dbUrl+", database:"+dbName);
             JsonObject config = new JsonObject();
             config.put("db_name", dbName);
             config.put("connection_string", dbUrl);
