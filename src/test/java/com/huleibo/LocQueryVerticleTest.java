@@ -11,6 +11,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import locutil.GlobeDataStore;
+import locutil.UserLocal;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -30,6 +31,35 @@ import java.util.Date;
  */
 @RunWith(VertxUnitRunner.class)
 public class LocQueryVerticleTest {
+
+    private long UID = 800001;
+    @Test
+    public void setUserLocal(TestContext context) throws Exception {
+        Config.getInstance().getLocationManagerConfig();
+        final Async async = context.async();
+
+        JsonObject ulJO = new JsonObject();
+        JsonObject ulcity = new JsonObject();
+        ulcity.put(UserLocal.PROVINCE, "Jiangsu");
+        ulcity.put(UserLocal.CITY, "Wuxi");
+        ulJO.put(UserLocal.UID, UID);
+        ulJO.put(UserLocal.ANALYZERALLOWED, false);
+        ulJO.put(UserLocal.LANG, "en");
+        ulJO.put(UserLocal.PROBABILITY, 0.8);
+        ulJO.put(UserLocal.LOCAL, ulcity);
+        String val = ulJO.encode();
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
+                response -> {
+                    response.handler(body -> {
+                        context.assertTrue(body.toJsonObject().getString("result").equals("OK"));
+                        async.complete();
+                    });
+                })
+                .putHeader("Content-Length", val.length() + "")
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .write(val).end();
+    }
     @Test
     public void uploadUserLocation(TestContext context) throws Exception {
         Config.getInstance().getLocationManagerConfig();
@@ -60,6 +90,7 @@ public class LocQueryVerticleTest {
     public void setUp(TestContext context) {
         vertx = Vertx.vertx();
         Config.enableLog();
+        Config.enableDebug(true);
         port = Integer.valueOf(Config.getInstance().getConfig().get("http.port").toString());
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("http.port", port)

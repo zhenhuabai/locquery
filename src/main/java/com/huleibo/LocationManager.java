@@ -9,6 +9,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
+import locutil.UserLocal;
 import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,12 +133,42 @@ public class LocationManager extends LocApp {
                     ul.setCityInfo(cityJo);
                     MongoDbHelper.putUserLocation(mongoClient, ul, res->{
                         if(res.succeeded()){
-                            ret.put("result",true);
+                            ret.put("result","OK");
                             dbResult.complete(ret);
                             logger.debug("upload:"+res.result());
                         }else{
                             logger.error("failed upload:"+res.result());
-                            ret.put("result",false);
+                            ret.put("result","error:upload");
+                            dbResult.fail(ret.toString());
+                        }
+                    });
+                },dbResult);
+            }
+            return dbResult;
+        });
+        //processing setlocal command
+        cmdDispatcher.put("setlocal",entries->{
+            JsonObject ret = new JsonObject();
+            Future<JsonObject> dbResult = Future.future();
+            final JsonObject param = entries.getJsonObject("param");
+            UserLocal ul = UserLocal.parseUserLocal(param);
+            if(ul == null){
+                logger.error("illegal parameters in user local");
+                ret.put("error","illegal parameter");
+                dbResult.fail(ret.toString());
+            }else{
+                //get city information from map server
+                Future<Void> chain = Future.succeededFuture();
+                chain.compose(v->{
+                    //save user location info to db
+                    MongoDbHelper.setUserLocal(mongoClient, ul, res->{
+                        if(res.succeeded()){
+                            ret.put("result","OK");
+                            dbResult.complete(ret);
+                            logger.debug("upload:"+res.result());
+                        }else{
+                            logger.error("failed setlocal:"+res.result());
+                            ret.put("result","error:setlocal");
                             dbResult.fail(ret.toString());
                         }
                     });
