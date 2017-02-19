@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import locutil.UserLocal;
 import locutil.UserLocation;
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +28,7 @@ public class LocationManagerTest {
         final Async async = context.async();
         Future<Void>test1 = Future.future();
         Future<Void>test2 = Future.future();
-        Future<Void>start = Future.succeededFuture();
+        Future<Void>test3 = Future.future();
         UserLocation ul = new UserLocation(UID,34.797,110.012,System.currentTimeMillis());
         JsonObject jo = ul.toJsonObject();
         JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
@@ -53,7 +54,27 @@ public class LocationManagerTest {
             }
             test2.complete();
         });
-        CompositeFuture.join(test1,test2).setHandler(ar ->{
+
+        JsonObject ulJO = new JsonObject();
+        JsonObject ulcity = new JsonObject();
+        ulcity.put(UserLocal.PROVINCE, "Jiangsu");
+        ulcity.put(UserLocal.CITY, "Nanjing");
+        ulJO.put(UserLocal.UID, UID);
+        ulJO.put(UserLocal.ANALYZERALLOWED, true);
+        ulJO.put(UserLocal.LANG, "en");
+        ulJO.put(UserLocal.PROBABILITY, 0.8);
+        ulJO.put(UserLocal.LOCAL, ulcity);
+        upload = new JsonObject().put("cmd","setlocal").put("param",ulJO);
+        System.out.println("asking command:"+upload.toString());
+        eb.send("Server:LocationManager",upload.toString(), reply->{
+            if (reply.succeeded()) {
+                System.out.println("result:"+reply.result().body().toString());
+            } else {
+                System.out.println("failed processing cmd:"+reply.result().body().toString());
+            }
+            test3.complete();
+        });
+        CompositeFuture.join(test1,test2,test3).setHandler(ar ->{
             if(ar.succeeded()){
                 System.out.println("All tests finished");
             }else{

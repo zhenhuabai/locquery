@@ -2,10 +2,12 @@ package common;
 
 import com.huleibo.LocationManager;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
+import locutil.UserLocal;
 import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +30,7 @@ public class MongoDbHelper {
     private static final String DBGDBKEY = "dbgdatabase";
     private static final String DBURLKEY = "mongodburl";
     public static final String COLLECTION_USERLOCATION = "userlocations";
+    public static final String COLLECTION_USERLOCAL = "userlocal";
     private String dbName = null;
     private String dbUrl = null;
     private JSONObject joc = null;
@@ -77,6 +80,61 @@ public class MongoDbHelper {
             } else {
                 logger.error("problem saving:"+uloc.toString());
                 res.cause().printStackTrace();
+                Future<String> future = Future.future();
+                future.fail("problem saving "+uloc.toString());
+                resultHandler.handle(future);
+            }
+        });
+    }
+
+    //Note: one user id can only has one user local info. The new one will replace the old.
+    public static void setUserLocal(MongoClient client, UserLocal uloc,
+                                       Handler<AsyncResult<String>>resultHandler){
+        JsonObject jo = uloc.toJsonObject();
+        long uid = jo.getLong(UserLocal.UID);
+        JsonObject query = new JsonObject().put(UserLocal.UID, uid);
+        client.find(COLLECTION_USERLOCAL, query, res -> {
+            if (res.succeeded()) {
+                logger.info("removing old user locals");
+                client.removeDocument(COLLECTION_USERLOCAL, query, removal->{
+                    if(removal.succeeded()){
+                        client.insert(COLLECTION_USERLOCAL, uloc.toJsonObject(), result->{
+                            if(result.succeeded()){
+                                resultHandler.handle(result);
+                            }else{
+                                logger.error("problem saving "+uloc.toString());
+                                Future<String> future = Future.future();
+                                future.fail("problem saving "+uloc.toString());
+                                resultHandler.handle(future);
+                            }
+                        });
+                    } else {
+                        logger.error("Problem removing uid = "+uid);
+                        //still trying to save
+                        client.insert(COLLECTION_USERLOCAL, uloc.toJsonObject(), result->{
+                            if(result.succeeded()){
+                                resultHandler.handle(result);
+                            }else{
+                                logger.error("problem saving "+uloc.toString());
+                                Future<String> future = Future.future();
+                                future.fail("problem saving "+uloc.toString());
+                                resultHandler.handle(future);
+                            }
+                        });
+                    }
+                });
+            } else {
+                logger.debug("save new user local:"+uloc.toString());
+                client.insert(COLLECTION_USERLOCAL, uloc.toJsonObject(), result->{
+                    if(result.succeeded()){
+                        resultHandler.handle(result);
+                    }else{
+                        logger.error("problem saving "+uloc.toString());
+                        Future<String> future = Future.future();
+                        future.fail("problem saving "+uloc.toString());
+                        resultHandler.handle(future);
+                    }
+                });
             }
         });
     }

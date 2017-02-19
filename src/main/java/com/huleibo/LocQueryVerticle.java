@@ -68,9 +68,9 @@ public class LocQueryVerticle extends LocApp {
         router.get("/api/weather").handler(this::remoteQueryWeather);
         router.route("/api/userlocation*").handler(BodyHandler.create());
         router.post("/api/userlocation").handler(this::uploadUserLocation);
-        /*
         router.route("/api/userlocal*").handler(BodyHandler.create());
         router.put("/api/userlocal").handler(this::setUserLocal);
+        /*
         router.get("/api/userlocal").handler(this::isUserLocal);
         router.route("/api/userroaming*").handler(BodyHandler.create());
         router.get("/api/userroaming").handler(this::isUserRoaming);
@@ -186,6 +186,39 @@ public class LocQueryVerticle extends LocApp {
             routingContext.response().setStatusCode(400).end();
         }
     }
+    public void setUserLocal(RoutingContext routingContext) {
+        try {
+            String request = routingContext.request().absoluteURI();
+            logger.debug("handling setUserLocal");
+            if(!request.contains("uid")) {
+                String body = routingContext.getBodyAsString();
+                logger.debug("body string="+body);
+                JsonObject jo = routingContext.getBodyAsJson();
+                JsonObject setlocal = new JsonObject().put("cmd","setlocal").put("param",jo);
+                logger.debug("local = "+jo.toString());
+                eb.send("Server:LocationManager", setlocal.toString(), reply -> {
+                    if (reply.succeeded()) {
+                        logger.info(String.format("[%s]->%s", "setlocal", reply.result().body().toString()));
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    } else {
+                        logger.warn("Server no reply for:setlocal");
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end("Error: LocationManager server not ready!");
+                    }
+                });
+            }else{
+                logger.warn("Illegal parameters");
+                routingContext.response().setStatusCode(400).end();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.warn("Problem handling request:"+routingContext.request().toString());
+            routingContext.response().setStatusCode(400).end();
+        }
+    }
     public void uploadUserLocation(RoutingContext routingContext) {
         try {
             String request = routingContext.request().absoluteURI();
@@ -206,7 +239,7 @@ public class LocQueryVerticle extends LocApp {
                         logger.warn("Server no reply for:upload");
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
-                                .end("Error: Weather server not ready!");
+                                .end("Error: LocationManager server not ready!");
                     }
                 });
             }else{
