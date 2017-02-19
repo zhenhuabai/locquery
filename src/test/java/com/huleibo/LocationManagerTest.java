@@ -1,10 +1,7 @@
 package com.huleibo;
 
 import common.Config;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -28,7 +25,10 @@ public class LocationManagerTest {
     @Test
     public void testCmdHandler(TestContext context) throws Exception {
         final Async async = context.async();
-        UserLocation ul = new UserLocation(UID,38.2,118.33,System.currentTimeMillis());
+        Future<Void>test1 = Future.future();
+        Future<Void>test2 = Future.future();
+        Future<Void>start = Future.succeededFuture();
+        UserLocation ul = new UserLocation(UID,34.797,110.012,System.currentTimeMillis());
         JsonObject jo = ul.toJsonObject();
         JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
         System.out.println("asking command:"+upload.toString());
@@ -37,6 +37,27 @@ public class LocationManagerTest {
                 System.out.println("result:"+reply.result().body().toString());
             } else {
                 System.out.println("failed processing cmd:"+reply.result().body().toString());
+            }
+            test1.complete();
+        });
+
+        ul = new UserLocation(UID,34.797,118.012,System.currentTimeMillis());
+        jo = ul.toJsonObject();
+        upload = new JsonObject().put("cmd","upload").put("param",jo);
+        System.out.println("asking command:"+upload.toString());
+        eb.send("Server:LocationManager",upload.toString(), reply->{
+            if (reply.succeeded()) {
+                System.out.println("result:"+reply.result().body().toString());
+            } else {
+                System.out.println("failed processing cmd:"+reply.result().body().toString());
+            }
+            test2.complete();
+        });
+        CompositeFuture.join(test1,test2).setHandler(ar ->{
+            if(ar.succeeded()){
+                System.out.println("All tests finished");
+            }else{
+                System.out.println("Error, some tests not finished");
             }
             async.complete();
         });
@@ -59,12 +80,14 @@ public class LocationManagerTest {
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(new JsonObject().put("debug", 1)
                 );
+        vertx.deployVerticle(CountryMapServer.class.getName(), options,
+                context.asyncAssertSuccess());
         vertx.deployVerticle(LocationManager.class.getName(), options,
                 context.asyncAssertSuccess());
     }
 
     @After
     public void tearDown(TestContext context) throws Exception {
-        vertx.close(context.asyncAssertSuccess());
+        //vertx.close(context.asyncAssertSuccess());
     }
 }
