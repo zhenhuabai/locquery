@@ -3,6 +3,9 @@ package com.huleibo;
 import common.Config;
 import common.MongoDbHelper;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
@@ -30,7 +33,7 @@ import java.util.function.Function;
 public class LocationManager extends LocApp {
     private static final String[] cmds =
             {"upload","setlocal","getlocal","isroaming"};
-    private HashMap<String, Function<JsonObject,JsonObject>> cmdDispatcher = new
+    private HashMap<String, Function<JsonObject,Future<JsonObject>>> cmdDispatcher = new
             HashMap<>();
     private static final Logger logger = LogManager.getLogger(LocationManager.class);
     public void handle(Signal signalName) {
@@ -62,13 +65,16 @@ public class LocationManager extends LocApp {
                 if(!cmd.isEmpty()){
                     String cmdS = cmd.getString("cmd");
                     if(cmdDispatcher.containsKey(cmdS)){
-                        vertx.executeBlocking(future -> {
-                            JsonObject res = cmdDispatcher.get(cmdS).apply(cmd);
-                            logger.debug(cmd.toString()+"->"+res.toString());
-                            message.reply(res.toString());
-                        },
-                        asyncResult -> {
-                            logger.debug("completed mongo operation");
+                        Future<JsonObject> res = cmdDispatcher.get(cmdS).apply(cmd);
+                        res.setHandler(result->{
+                            if(result.succeeded()){
+                                logger.debug(cmd.toString()+"->"+result.result().toString());
+                                message.reply(result.result().toString());
+                            }else{
+                                logger.debug("Failed saving user location:"+result.toString());
+                                logger.debug("Failed saving user location msg:"+result.cause().getMessage());
+                                message.reply("{\"error\":\"failed saving user location!\"}");
+                            }
                         });
                     }else{
                         message.reply("{\"error\":\"command not supported!\"}");
@@ -94,36 +100,50 @@ public class LocationManager extends LocApp {
         //function handling upload command
         //we don't check parameters, assuming caller knows what is doing
         cmdDispatcher.put("upload",entries->{
-            Object o = new Object();
             JsonObject ret = new JsonObject();
+            Future<JsonObject> dbResult = Future.future();
             final JsonObject param = entries.getJsonObject("param");
-            if(!param.isEmpty()){
-                MongoDbHelper.putUserLocation(mongoClient, new UserLocation(param), res->{
-                    if(res.succeeded()){
-                        ret.put("result",true);
-                        logger.debug("upload:"+res.result());
-                    }else{
-                        logger.error("failed upload:"+res.result());
-                        ret.put("result",false);
-                    }
-                    synchronized (o){
-                        o.notifyAll();
-                    }
-                });
-                synchronized (o) {
-                    try {
-                        o.wait(10000);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        ret.put("error","timeout saving data to db.");
-                        logger.error("Exception unexpected");
-                    }
-                }
+            UserLocation ul = UserLocation.parseUserLocation(param);
+            if(ul == null){
+                logger.error("illegal parameters in user location");
+                ret.put("error","illegal parameter");
+                dbResult.fail(ret.toString());
             }else{
-                ret.put("error","wrong parameters");
+                //get city information from map server
+                Future<Void> chain = Future.succeededFuture();
+                chain.compose(v -> {
+                    Future<String> cityFinding = Future.future();
+                    StringBuffer sb = new StringBuffer();
+                    sb.append(String.valueOf(ul.lat)).append(",")
+                            .append(String.valueOf(ul.lon)).append(",lm");
+                    eb.send("Server:China", sb.toString(), reply -> {
+                        if (reply.succeeded()) {
+                            logger.info(String.format("[%s]->%s", param.toString(), reply.result().body().toString()));
+                            cityFinding.complete(reply.result().body().toString());
+                        } else {
+                            cityFinding.fail("No reply from MapServer");
+                            logger.warn("Server no reply for:" + sb);
+                        }
+                    });
+                    return cityFinding;
+                }).compose(city->{
+                    //save user location info to db
+                    JsonObject cityJo = new JsonObject(city);
+                    ul.setCityInfo(cityJo);
+                    MongoDbHelper.putUserLocation(mongoClient, ul, res->{
+                        if(res.succeeded()){
+                            ret.put("result",true);
+                            dbResult.complete(ret);
+                            logger.debug("upload:"+res.result());
+                        }else{
+                            logger.error("failed upload:"+res.result());
+                            ret.put("result",false);
+                            dbResult.fail(ret.toString());
+                        }
+                    });
+                },dbResult);
             }
-            logger.debug("End wait ret = "+ret.toString());
-            return ret;
+            return dbResult;
         });
     }
 }

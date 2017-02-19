@@ -24,6 +24,7 @@ public class MongoDbHelper {
     }
 
     private static final String DBKEY = "database";
+    public static final String TESTDATABASE = "db4buildandtest";
     private static final String DBGDBKEY = "dbgdatabase";
     private static final String DBURLKEY = "mongodburl";
     public static final String COLLECTION_USERLOCATION = "userlocations";
@@ -40,13 +41,10 @@ public class MongoDbHelper {
 
     public MongoClient requestClient(Vertx vertx, String source){
         MongoClient client = null;
-        if(Config.isDebug()){
-            if (joc.containsKey(DBGDBKEY)) {
-                dbName = joc.get(DBGDBKEY).toString();
-            }
-        }else {
-            if (joc.containsKey(DBKEY)) {
-                dbName = joc.get(DBKEY).toString();
+        if (joc.containsKey(DBKEY)) {
+            dbName = joc.get(DBKEY).toString();
+            if(Config.isDebug()) {
+                dbName = TESTDATABASE;
             }
         }
         if(joc.containsKey(DBURLKEY)){

@@ -1,6 +1,7 @@
 package locutil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,6 +52,12 @@ public class LocInfo {
         } else {
             return toString();
         }
+    }
+    public String toAllString(){
+        String en = toString();
+        String cn = toLocalString();
+        JsonObject all = new JsonObject().put("en",en).put("zh",cn);
+        return all.toString();
     }
     public void print(){
         StringWriter out = new StringWriter();

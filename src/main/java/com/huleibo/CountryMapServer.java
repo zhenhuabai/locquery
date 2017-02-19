@@ -94,7 +94,11 @@ public class CountryMapServer extends LocApp{
                 LocInfo li = GlobeDataStore.getInstance(mappath).findCityDirect(lat, lon);
                 if (li != null) {
                     logger.info(String.format("[%f, %f]->%s", lon, lat, li.toString()));
-                    if(loc.length > 2 && loc[2].equalsIgnoreCase("zh")){
+                    //this message from location manager which expects all languages
+                    if(loc.length > 2 && loc[2].equalsIgnoreCase("lm")){
+                        translateLocInfoCN(li);
+                        message.reply(li.toAllString());
+                    }else if(loc.length > 2 && loc[2].equalsIgnoreCase("zh")){
                         if(translateLocInfoCN(li)){
                             message.reply(li.toLocalString());
                         } else {
