@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
 
 /**
@@ -14,6 +15,11 @@ import java.util.HashMap;
  */
 public class UserLocation {
     private static final Logger logger = LogManager.getLogger(UserLocation.class);
+    //data columns in db
+    public static final String UID = "uid";
+    public static final String CITYINFO = "cityinfo";
+    public static final String GEOPOINT = "geopoint";
+    public static final String TIMESTAMP = "timestamp";
     public long userid;
     public double lon;
     public double lat;
@@ -59,9 +65,15 @@ public class UserLocation {
             Long uid = jo.getLong("uid");
             Long timestamp = jo.getLong("timestamp");
             JsonObject geop = jo.getJsonObject("geopoint");
-            JsonArray ja = geop.getJsonArray(GeoPoint.COODINATES);
-            Double lon = ja.getDouble(0);
-            Double lat = ja.getDouble(1);
+            Double lon, lat;
+            if(geop != null) {
+                JsonArray ja = geop.getJsonArray(GeoPoint.COODINATES);
+                lon = ja.getDouble(0);
+                lat = ja.getDouble(1);
+            }else{
+                lon = jo.getDouble("lon");
+                lat = jo.getDouble("lat");
+            }
             if(uid != null && timestamp != null &&
                     lon != null && lat != null){
                 ul = new UserLocation(uid, lon, lat, timestamp);

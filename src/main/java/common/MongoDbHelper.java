@@ -31,6 +31,7 @@ public class MongoDbHelper {
     private static final String DBURLKEY = "mongodburl";
     public static final String COLLECTION_USERLOCATION = "userlocations";
     public static final String COLLECTION_USERLOCAL = "userlocal";
+    public static final String COLLECTION_USERLOCALANALYZED = "userlocalanalyzed";
     private String dbName = null;
     private String dbUrl = null;
     private JSONObject joc = null;
