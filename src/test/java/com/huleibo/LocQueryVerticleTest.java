@@ -74,7 +74,8 @@ public class LocQueryVerticleTest {
         vertx.createHttpClient().post(port, "localhost", "/api/userlocation",
                 response -> {
                     response.handler(body -> {
-                        context.assertTrue(body.toJsonObject().getBoolean("result"));
+                        System.out.println("response 2:"+body.toString());
+                        context.assertTrue(body.toJsonObject().getString("result").equals("OK"));
                         async.complete();
                     });
                 })

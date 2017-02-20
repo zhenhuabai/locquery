@@ -5,7 +5,8 @@
     "database": "locquery"
   },
   "locationanalyzer" : {
-
+    "pastdays":90,
+    "thresholdpercentage": 0.8
   },
   "weather" : {
     "citylist": {
