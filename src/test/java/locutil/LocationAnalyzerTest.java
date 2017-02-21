@@ -23,7 +23,7 @@ public class LocationAnalyzerTest {
     @Test
     public void startLocalLocation() throws Exception {
         LocationAnalyzer.startLocalLocation(client);
-        //let's run for 5 sec
+        //let's assume analyzer finishes in 5 seconds
         Thread.sleep(5*1000);
         LocationAnalyzer.stopLocalLocation();
     }

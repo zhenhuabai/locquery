@@ -95,7 +95,7 @@ public class MongoDbHelper {
         long uid = jo.getLong(UserLocal.UID);
         JsonObject query = new JsonObject().put(UserLocal.UID, uid);
         client.find(COLLECTION_USERLOCAL, query, res -> {
-            if (res.succeeded()) {
+            if (res.succeeded() && res.result().size()>0) {
                 logger.info("removing old user locals");
                 client.removeDocument(COLLECTION_USERLOCAL, query, removal->{
                     if(removal.succeeded()){
@@ -133,6 +133,58 @@ public class MongoDbHelper {
                         logger.error("problem saving "+uloc.toString());
                         Future<String> future = Future.future();
                         future.fail("problem saving "+uloc.toString());
+                        resultHandler.handle(future);
+                    }
+                });
+            }
+        });
+    }
+
+    //this is for analyzer to save the analyzed result
+    public static void setAnalyzedLocal(MongoClient client, JsonObject jo,
+                                    Handler<AsyncResult<String>>resultHandler){
+        long uid = jo.getLong(UserLocal.UID);
+        logger.info("save analyzed result for:"+uid);
+        JsonObject query = new JsonObject().put(UserLocal.UID, uid);
+        client.find(COLLECTION_USERLOCALANALYZED, query, res -> {
+            if (res.succeeded() && res.result().size()>0) {
+                logger.info("removing old analyzed result locals:"+res.result().toString());
+                client.removeDocument(COLLECTION_USERLOCALANALYZED, query, removal->{
+                    if(removal.succeeded()){
+                        client.insert(COLLECTION_USERLOCALANALYZED, jo, result->{
+                            if(result.succeeded()){
+                                resultHandler.handle(result);
+                            }else{
+                                logger.error("problem saving "+result.cause().toString());
+                                Future<String> future = Future.future();
+                                future.fail("problem saving "+result.cause().toString());
+                                resultHandler.handle(future);
+                            }
+                        });
+                    } else {
+                        logger.error("Problem removing uid = "+uid);
+                        //still trying to save
+                        client.insert(COLLECTION_USERLOCALANALYZED, jo, result->{
+                            if(result.succeeded()){
+                                resultHandler.handle(result);
+                            }else{
+                                logger.error("problem saving "+uid+" "+result.cause().toString());
+                                Future<String> future = Future.future();
+                                future.fail("problem saving "+result.cause().toString());
+                                resultHandler.handle(future);
+                            }
+                        });
+                    }
+                });
+            } else {
+                logger.debug("save analyzed user local:"+jo.toString());
+                client.insert(COLLECTION_USERLOCALANALYZED, jo, result->{
+                    if(result.succeeded()){
+                        resultHandler.handle(result);
+                    }else{
+                        logger.error("problem saving "+jo.toString());
+                        Future<String> future = Future.future();
+                        future.fail("problem saving "+jo.toString());
                         resultHandler.handle(future);
                     }
                 });

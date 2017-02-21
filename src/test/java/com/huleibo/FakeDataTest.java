@@ -116,11 +116,11 @@ public class FakeDataTest {
     @Test
     public void createLocationHistory(TestContext context){
         final Async async = context.async();
-        JsonArray hist = generateHistory(100001,locSet,nanjing80percent,10,30);
+        JsonArray hist = generateHistory(100001,locSet,nanjing80percent,100,30);
         postUserLocation(hist);
-        hist = generateHistory(100002,locSet,nanjing40weinan40percent,20,30);
+        hist = generateHistory(100002,locSet,nanjing40weinan40percent,200,30);
         postUserLocation(hist);
-        hist = generateHistory(100003,locSet,nanjing50weinan20wuxi16percent,10,30);
+        hist = generateHistory(100003,locSet,nanjing50weinan20wuxi16percent,100,30);
         postUserLocation(hist);
         async.complete();
     }
