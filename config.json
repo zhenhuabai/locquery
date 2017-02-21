@@ -2,11 +2,11 @@
   "http.port" : 28080,
   "locationmanager" : {
     "mongodburl": "mongodb://localhost:27017",
-    "database": "locquery"
-  },
-  "locationanalyzer" : {
-    "pastdays":90,
-    "thresholdpercentage": 0.8
+    "database": "locquery",
+    "locationanalyzer" : {
+      "pastdays":90,
+      "thresholdpercentage": 0.8
+    }
   },
   "weather" : {
     "citylist": {
