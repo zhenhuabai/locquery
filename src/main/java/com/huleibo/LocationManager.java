@@ -2,13 +2,12 @@ package com.huleibo;
 
 import common.Config;
 import common.MongoDbHelper;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
+import locutil.LocationAnalyzer;
 import locutil.UserLocal;
 import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +15,9 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import sun.misc.Signal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -28,8 +29,8 @@ import java.util.function.Function;
  * This server receives & processes command string in format:
  * {cmd:upload, param:{uid:long,lon:double,lat:double,timestamp:long}}
  * {cmd:setlocal, param:{uid:long,country:string, province:string,city:string,county:string}}
- * {cmd:getlocal, param:{uids:[1,2,...n], lang:string}}
- * {cmd:isroaming, param:{uids:long, lon:double, lat:double, level: n%}}
+ * {cmd:getlocals, param:{uids:[1,2,...n], lang:string}}
+ * {cmd:isroaming, param:{uid:long, lon:double, lat:double, probability: 0.x}}
  */
 public class LocationManager extends LocApp {
     private static final String[] cmds =
@@ -72,9 +73,8 @@ public class LocationManager extends LocApp {
                                 logger.debug(cmd.toString()+"->"+result.result().toString());
                                 message.reply(result.result().toString());
                             }else{
-                                logger.debug("Failed saving user location:"+result.toString());
-                                logger.debug("Failed saving user location msg:"+result.cause().getMessage());
-                                message.reply("{\"error\":\"failed saving user location!\"}");
+                                logger.debug("Failed operation:"+cmdS+" msg:"+result.cause().getMessage());
+                                message.reply("{\"error\":"+result.cause().toString()+"\"}");
                             }
                         });
                     }else{
@@ -97,19 +97,19 @@ public class LocationManager extends LocApp {
             logger.debug("stopped location manager");
         });
     }
-    private void installCommandHandler(){
+    private void installCommandHandler() {
         //function handling upload command
         //we don't check parameters, assuming caller knows what is doing
-        cmdDispatcher.put("upload",entries->{
+        cmdDispatcher.put("upload", entries -> {
             JsonObject ret = new JsonObject();
             Future<JsonObject> dbResult = Future.future();
             final JsonObject param = entries.getJsonObject("param");
             UserLocation ul = UserLocation.parseUserLocation(param);
-            if(ul == null){
+            if (ul == null) {
                 logger.error("illegal parameters in user location");
-                ret.put("error","illegal parameter");
+                ret.put("error", "illegal parameter");
                 dbResult.fail(ret.toString());
-            }else{
+            } else {
                 //get city information from map server
                 Future<Void> chain = Future.succeededFuture();
                 chain.compose(v -> {
@@ -127,52 +127,224 @@ public class LocationManager extends LocApp {
                         }
                     });
                     return cityFinding;
-                }).compose(city->{
+                }).compose(city -> {
                     //save user location info to db
                     JsonObject cityJo = new JsonObject(city);
                     ul.setCityInfo(cityJo);
-                    MongoDbHelper.putUserLocation(mongoClient, ul, res->{
-                        if(res.succeeded()){
-                            ret.put("result","OK");
+                    MongoDbHelper.putUserLocation(mongoClient, ul, res -> {
+                        if (res.succeeded()) {
+                            ret.put("result", "OK");
                             dbResult.complete(ret);
-                            logger.debug("upload:"+res.result());
-                        }else{
-                            logger.error("failed upload:"+res.result());
-                            ret.put("result","error:upload");
+                            logger.debug("upload:" + res.result());
+                        } else {
+                            logger.error("failed upload:" + res.result());
+                            ret.put("result", "error:upload");
                             dbResult.fail(ret.toString());
                         }
                     });
-                },dbResult);
+                }, dbResult);
             }
             return dbResult;
         });
         //processing setlocal command
-        cmdDispatcher.put("setlocal",entries->{
+        cmdDispatcher.put("setlocal", entries -> {
             JsonObject ret = new JsonObject();
             Future<JsonObject> dbResult = Future.future();
             final JsonObject param = entries.getJsonObject("param");
             UserLocal ul = UserLocal.parseUserLocal(param);
-            if(ul == null){
+            if (ul == null) {
                 logger.error("illegal parameters in user local");
-                ret.put("error","illegal parameter");
+                ret.put("error", "illegal parameter");
                 dbResult.fail(ret.toString());
-            }else{
+            } else {
                 //get city information from map server
                 Future<Void> chain = Future.succeededFuture();
-                chain.compose(v->{
+                chain.compose(v -> {
                     //save user location info to db
-                    MongoDbHelper.setUserLocal(mongoClient, ul, res->{
-                        if(res.succeeded()){
-                            ret.put("result","OK");
+                    MongoDbHelper.setUserLocal(mongoClient, ul, res -> {
+                        if (res.succeeded()) {
+                            ret.put("result", "OK");
                             dbResult.complete(ret);
-                            logger.debug("upload:"+res.result());
-                        }else{
-                            logger.error("failed setlocal:"+res.result());
-                            ret.put("result","error:setlocal");
+                            logger.debug("upload:" + res.result());
+                        } else {
+                            logger.error("failed setlocal:" + res.result());
+                            ret.put("result", "error:setlocal");
                             dbResult.fail(ret.toString());
                         }
                     });
-                },dbResult);
+                }, dbResult);
+            }
+            return dbResult;
+        });
+        //process get user local cities.
+        /*
+         *the returned result on success:
+         * {result:[{uid:xxx,locals:[{{cityinfo:{province:xxx,city:yyy},probability:n,lang:zh|cn}],{....}}];
+         */
+        cmdDispatcher.put("getlocals", entries -> {
+            Future<JsonObject> dbResult = Future.future();
+            JsonObject okResult = new JsonObject();
+            JsonArray resultSet = new JsonArray();
+            final JsonObject param = entries.getJsonObject("param");
+            final String lang = entries.getString("lang");//.trim().toLowerCase();
+            logger.debug("cmd = " + entries.toString() + ", lang=" + lang);
+            JsonArray uids = param.getJsonArray("uids");
+            List<Future> ftList = new ArrayList<>();
+            HashMap<Integer, Future> uidFutures = new HashMap<>();
+            for (int i = 0; i < uids.size(); i++) {
+                int lid = uids.getInteger(i);
+                Future<Void> uidf = Future.future();
+                uidFutures.put(lid, uidf);
+                ftList.add(i, uidf);
+            }
+            uids.forEach(id -> {
+                Integer lid = (Integer) id;
+                //must returned the pre-set local?
+                MongoDbHelper.getUserLocal(mongoClient, lid, lang, result -> {
+                    if (result.succeeded()) {
+                        JsonObject locals = result.result();
+                        logger.debug("preset local:" + locals.toString());
+                        Boolean ae = locals.getBoolean(UserLocal.ANALYZERALLOWED);
+                        locals.remove(UserLocal.ANALYZERALLOWED);//not user visible
+                        if (ae == null || ae) {
+                            MongoDbHelper.getAnalyzedLocal(mongoClient, lid, lang, anaresult -> {
+                                if (anaresult.succeeded()) {
+                                    JsonObject anaLocals = anaresult.result();
+                                    logger.debug("added analyzed local:" + anaresult.toString());
+                                    resultSet.add(anaLocals);
+                                    uidFutures.get(lid).complete();
+                                } else {
+                                    //error! but treated as successfull, using the assigned one
+                                    resultSet.add(locals);
+                                    uidFutures.get(lid).complete();
+                                    logger.error("error from getAnalyzedLocal:" + anaresult.cause().toString());
+                                    logger.error("use the assigned one instead.");
+                                }
+                            });
+                        } else {
+                            logger.debug("added preset local:" + locals.toString());
+                            resultSet.add(locals);
+                            uidFutures.get(lid).complete();
+                        }
+                    } else {
+                        logger.error("error from getUserLocal:" + result.cause().toString());
+                        //try analyzed result as well
+                        MongoDbHelper.getAnalyzedLocal(mongoClient, lid, lang, anaresult -> {
+                            if (anaresult.succeeded()) {
+                                JsonObject anaLocals = anaresult.result();
+                                logger.debug("added analyzed local:" + anaresult.result().toString());
+                                resultSet.add(anaLocals);
+                                uidFutures.get(lid).complete();
+                            } else {
+                                //error! but treated as successfull, using empty result
+                                JsonObject emptyRec = new JsonObject();
+                                JsonArray emptyResult = new JsonArray();
+                                emptyRec.put(UserLocal.LOCALS, emptyResult);
+                                emptyRec.put("uid", lid);
+                                resultSet.add(emptyRec);
+                                uidFutures.get(lid).complete();
+                                logger.error("error from getAnalyzedLocal:" + anaresult.cause().toString());
+                            }
+                        });
+                    }
+                });
+            });
+            CompositeFuture.all(ftList).setHandler(handle -> {
+                okResult.put("result", resultSet);
+                logger.debug("getlocals:" + okResult.toString());
+                dbResult.complete(okResult);
+            });
+            return dbResult;
+        });
+        //check if a user is outside his/her "local cities"
+        /*
+         * {cmd:isnonlocal, param:{uid:long, lon:double, lat:double, probability: 0.x}}
+         * the returned result on success:
+         * {result:{uid:xxx,nonlocals:{true|false}}
+         */
+        cmdDispatcher.put("isnonlocal", entries -> {
+            JsonObject ret = new JsonObject();
+            Future<JsonObject> dbResult = Future.future();
+            final JsonObject param = entries.getJsonObject("param");
+            String uid = param.getString("uid");
+            Double lon = param.getDouble("lon");
+            Double lat = param.getDouble("lat");
+            Double probability = param.getDouble("probability");
+            if (uid == null || lon == null || lat == null || probability == null) {
+                logger.error("illegal parameters in user location");
+                ret.put("error", "illegal parameter");
+                dbResult.fail(ret.toString());
+            } else {
+                //get city information from map server
+                Future<Void> chain = Future.succeededFuture();
+                chain.compose(v -> {
+                    Future<String> cityFinding = Future.future();
+                    StringBuffer sb = new StringBuffer();
+                    sb.append(String.valueOf(lat)).append(",")
+                            .append(String.valueOf(lon)).append(",lm");
+                    eb.send("Server:China", sb.toString(), reply -> {
+                        if (reply.succeeded()) {
+                            logger.info(String.format("[%s]->%s", param.toString(), reply.result().body().toString()));
+                            cityFinding.complete(reply.result().body().toString());
+                        } else {
+                            cityFinding.fail("No reply from MapServer");
+                            logger.warn("Server no reply for:" + sb);
+                        }
+                    });
+                    return cityFinding;
+                }).compose(city -> {
+                    //We've known the city names, check them in history
+                    JsonObject foundcity =  new JsonObject(city);
+                    logger.debug("City from MapServer :"+foundcity.toString());
+                    if (foundcity == null) {
+                        logger.error("no city info found:"+foundcity.toString());
+                        dbResult.fail("no city found from MapServer");
+                    } else {
+                        //fetch the history
+                        LocationAnalyzer.getInstance().parseUserLocal(Long.parseLong(uid), probability, mongoClient, historyCities -> {
+                            if (historyCities.succeeded()) {
+                                JsonArray citylist = historyCities.result().getJsonArray("result");
+                                logger.debug("history city info:"+citylist.toString());
+                                boolean isnonlocal = false;
+                                search_qualified_history:
+                                for (Object c : citylist) {
+                                    JsonObject acity = (JsonObject) c;
+                                    JsonObject cityinfo = acity.getJsonObject("cityinfo");
+                                    logger.debug("Comparing with:"+cityinfo);
+                                    String[] supportedLang = {"zh", "en"};
+                                    for (int i = 0; i < supportedLang.length; i++) {
+                                        String langcityS = cityinfo.getString(supportedLang[i]);
+                                        String langcityFoundS = foundcity.getString(supportedLang[i]);
+                                        if(langcityFoundS.equals(langcityS)){
+                                            isnonlocal = true;
+                                            break search_qualified_history;
+                                        }
+                                        /*
+                                        JsonObject langcity = new JsonObject(cityinfo.getString(supportedLang[i]));
+                                        JsonObject langcityFound = new JsonObject(foundcity.getString(supportedLang[i]));
+                                        if (langcity != null) {
+                                            String province = langcity.getString(UserLocal.PROVINCE);
+                                            String cit = langcity.getString(UserLocal.CITY);
+                                            if (province.equalsIgnoreCase(langcityFound.getString(UserLocal.PROVINCE)) &&
+                                                    cit.equalsIgnoreCase(langcityFound.getString(UserLocal.CITY))
+                                                    ) {
+                                                //found match
+                                                isnonlocal = true;
+                                                break search_qualified_history;
+                                            }
+                                        }
+                                        */
+                                    }
+                                }
+                                JsonObject rslt = new JsonObject().put("result", isnonlocal);
+                                dbResult.complete(rslt);
+                            } else {
+                                logger.error("Problem searching in location history");
+                                dbResult.fail("problem searching history");
+                            }
+                        });
+                    }
+                }, dbResult);
             }
             return dbResult;
         });

@@ -9,6 +9,8 @@ import java.util.HashMap;
 /**
  * Created by 白振华 on 2017/2/19.
  * This class represents the local location of a user in database
+ * A user local data is defined as
+ * {uid:long,lang:"en|zh",cityinfo:{zh:{province,city},en:{province,city}},analyzerAllowed:true|false}
  */
 public class UserLocal {
     private static final Logger logger = LogManager.getLogger(UserLocal.class);
@@ -16,10 +18,10 @@ public class UserLocal {
     public static final String ANALYZERALLOWED = "analyzerAllowed";
     public static final String PROBABILITY = "probability";
     public static final String LANG = "lang";
-    public static final String LOCALCITYINFO = "localcityinfo";
+    public static final String CITYINFO = "cityinfo";
     public static final String PROVINCE = "province";
-    public static final String LOCAL = "local";
     public static final String CITY = "city";
+    public static final String LOCALS = "locals";
     public long userid;
     private boolean analyzerAllowed;
     private double probability;
@@ -31,7 +33,7 @@ public class UserLocal {
         analyzerAllowed = param.getBoolean(ANALYZERALLOWED);
         probability = param.getDouble(PROBABILITY);
         currentLang = param.getString(LANG);
-        localCityinfo = param.getJsonObject(LOCAL);
+        localCityinfo = param.getJsonObject(CITYINFO);
     }
     private UserLocal(long uid, boolean analyzerAllowed, double probability, String lang,
                      JsonObject localCityinfo){
@@ -50,7 +52,7 @@ public class UserLocal {
         mapper.put(LANG,currentLang);
         JsonObject jo = new JsonObject(mapper);
         if(localCityinfo != null){
-            jo.put(LOCALCITYINFO,localCityinfo);
+            jo.put(CITYINFO,localCityinfo);
         }
         return jo;
     }
@@ -65,17 +67,18 @@ public class UserLocal {
         try {
             Boolean analyzerAllowed = jo.getBoolean(ANALYZERALLOWED);
             Double probability = jo.getDouble(PROBABILITY);
-            if(probability<0 || probability >1){
+            //TODO: we don't enable individual city probability analyzer yet
+            if(probability == null){
+                probability = new Double(0.0);
+            }else if(probability<0 || probability >1){
                 throw new Exception("wrong range");
             }
             String currentLang = jo.getString(LANG);
-            JsonObject localCityinfo = jo.getJsonObject(LOCAL);
-            String province = localCityinfo.getString(PROVINCE);
-            String city = localCityinfo.getString(CITY);
+            JsonObject localCityinfo = jo.getJsonObject(CITYINFO);
             Long uid = jo.getLong(UID);
             if(uid != null &&  analyzerAllowed!= null &&
                     probability != null && localCityinfo != null &&
-                    currentLang != null && probability != null && city != null){
+                    currentLang != null){
                 ul = new UserLocal(uid, analyzerAllowed, probability, currentLang,
                         localCityinfo);
             }

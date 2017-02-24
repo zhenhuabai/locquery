@@ -25,6 +25,8 @@ import java.util.Map;
 
 /**
  * Created by 白振华 on 2017/1/11.
+ * This server convert [lat,lon] to city
+ * return String converted by json object
  */
 public class CountryMapServer extends LocApp{
     public void handle(Signal signalName) {

@@ -5,6 +5,7 @@ import common.Config;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import locutil.LocInfo;
 import io.vertx.core.AbstractVerticle;
@@ -70,11 +71,9 @@ public class LocQueryVerticle extends LocApp {
         router.post("/api/userlocation").handler(this::uploadUserLocation);
         router.route("/api/userlocal*").handler(BodyHandler.create());
         router.put("/api/userlocal").handler(this::setUserLocal);
-        /*
-        router.get("/api/userlocal").handler(this::isUserLocal);
-        router.route("/api/userroaming*").handler(BodyHandler.create());
-        router.get("/api/userroaming").handler(this::isUserRoaming);
-        */
+        router.get("/api/userlocal").handler(this::getUserLocal);
+        router.route("/api/isnonlocal*").handler(BodyHandler.create());
+        router.get("/api/isnonlocal").handler(this::isUserRoaming);
 
         theServer = vertx.createHttpServer();
                 theServer
@@ -178,7 +177,7 @@ public class LocQueryVerticle extends LocApp {
                 });
             }else{
                 logger.warn("Illegal parameters");
-                routingContext.response().setStatusCode(400).end();
+                routingContext.response().setStatusMessage("Illegal parameters").setStatusCode(400).end();
             }
         } catch (Exception e){
             e.printStackTrace();
@@ -186,24 +185,38 @@ public class LocQueryVerticle extends LocApp {
             routingContext.response().setStatusCode(400).end();
         }
     }
-    public void setUserLocal(RoutingContext routingContext) {
+    public void isUserRoaming(RoutingContext routingContext) {
         try {
             String request = routingContext.request().absoluteURI();
-            logger.debug("handling setUserLocal");
-            if(!request.contains("uid")) {
-                String body = routingContext.getBodyAsString();
-                logger.debug("body string="+body);
-                JsonObject jo = routingContext.getBodyAsJson();
-                JsonObject setlocal = new JsonObject().put("cmd","setlocal").put("param",jo);
-                logger.debug("local = "+jo.toString());
-                eb.send("Server:LocationManager", setlocal.toString(), reply -> {
+            logger.debug("handling isnonlocal:"+request);
+            if(request.contains("uid")) {
+                String uid = routingContext.request().getParam("uid").toString();
+                String prob = routingContext.request().getParam("probability").toString();
+                String location = routingContext.request().getParam("location").toString();
+                Double probability = Double.parseDouble(prob);
+                String[] locs = location.split(",");
+                Double lon = Double.parseDouble(locs[1]);
+                Double lat = Double.parseDouble(locs[0]);
+                JsonObject param = new JsonObject();
+                param.put("uid",uid);
+                param.put("lon",lon);
+                param.put("lat",lat);
+                param.put("probability",probability);
+                JsonObject isroaming = new JsonObject().put("cmd","isnonlocal")
+                        .put("param",param);
+                if(uid == null || location == null || locs == null ||
+                        lon == null || lat == null || probability<0||probability>1){
+                    logger.error("parameters not properly set");
+                    throw new Exception("Illegal parameters");
+                }
+                eb.send("Server:LocationManager", isroaming.toString(), reply -> {
                     if (reply.succeeded()) {
-                        logger.info(String.format("[%s]->%s", "setlocal", reply.result().body().toString()));
+                        logger.info(String.format("[%s]->%s", "isnonlocal", reply.result().body().toString()));
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
                                 .end(reply.result().body().toString());
                     } else {
-                        logger.warn("Server no reply for:setlocal");
+                        logger.warn("Server no reply for:isroaming");
                         routingContext.response()
                                 .putHeader("content-type", "application/json; charset=utf-8")
                                 .end("Error: LocationManager server not ready!");
@@ -211,45 +224,112 @@ public class LocQueryVerticle extends LocApp {
                 });
             }else{
                 logger.warn("Illegal parameters");
-                routingContext.response().setStatusCode(400).end();
+                routingContext.response().setStatusMessage("Illegal parameters").setStatusCode(400).end();
             }
         } catch (Exception e){
             e.printStackTrace();
             logger.warn("Problem handling request:"+routingContext.request().toString());
-            routingContext.response().setStatusCode(400).end();
+            routingContext.response().setStatusMessage(e.toString()).setStatusCode(400).end();
+        }
+    }
+    public void getUserLocal(RoutingContext routingContext) {
+        try {
+            String request = routingContext.request().absoluteURI();
+            logger.debug("handling getUserLocal:"+request);
+            if(request.contains("uid")) {
+                String uid = routingContext.request().getParam("uid").toString();
+                String lang = routingContext.request().getParam("lang").toString();
+                String[]uids = uid.split(",");
+                JsonArray uidA = new JsonArray();
+                for (int i = 0; i < uids.length; i++) {
+                    Integer v = Integer.parseInt(uids[i]);
+                    uidA.add(v);
+                }
+                JsonObject param = new JsonObject();
+                param.put("uids",uidA);
+                JsonObject getlocal = new JsonObject().put("cmd","getlocals")
+                        .put("param",param)
+                        .put("lang",lang);
+                logger.debug("process uid:"+uid+" lang:"+lang);
+                if(uid == null || lang == null || lang.toLowerCase().matches("zh\\|en")){
+                    logger.error("parameters not properly set");
+                    throw new Exception("Illegal parameters");
+                }
+                eb.send("Server:LocationManager", getlocal.toString(), reply -> {
+                    if (reply.succeeded()) {
+                        logger.info(String.format("[%s]->%s", "getlocal", reply.result().body().toString()));
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    } else {
+                        logger.warn("Server no reply for:getlocal");
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end("Error: LocationManager server not ready!");
+                    }
+                });
+            }else{
+                logger.warn("Illegal parameters");
+                routingContext.response().setStatusMessage("Illegal parameters").setStatusCode(400).end();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.warn("Problem handling request:"+routingContext.request().toString());
+            routingContext.response().setStatusMessage(e.toString()).setStatusCode(400).end();
+        }
+    }
+    public void setUserLocal(RoutingContext routingContext) {
+        try {
+            String request = routingContext.request().absoluteURI();
+            logger.debug("handling setUserLocal:"+request);
+            String body = routingContext.getBodyAsString();
+            JsonObject jo = routingContext.getBodyAsJson();
+            JsonObject setlocal = new JsonObject().put("cmd","setlocal").put("param",jo);
+            eb.send("Server:LocationManager", setlocal.toString(), reply -> {
+                if (reply.succeeded()) {
+                    logger.info(String.format("[%s]->%s", "setlocal", reply.result().body().toString()));
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=utf-8")
+                            .end(reply.result().body().toString());
+                } else {
+                    logger.warn("Server no reply for:setlocal");
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=utf-8")
+                            .end("Error: LocationManager server not ready!");
+                }
+            });
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.warn("Problem handling request:"+routingContext.request().toString());
+            routingContext.response().setStatusMessage("Illegal parameters").setStatusCode(400).end();
         }
     }
     public void uploadUserLocation(RoutingContext routingContext) {
         try {
             String request = routingContext.request().absoluteURI();
             logger.debug("handling uploadUserLocation");
-            if(!request.contains("uid")) {
-                String body = routingContext.getBodyAsString();
-                logger.debug("body string="+body);
-                JsonObject jo = routingContext.getBodyAsJson();
-                JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
-                logger.debug("upload = "+jo.toString());
-                eb.send("Server:LocationManager", upload.toString(), reply -> {
-                    if (reply.succeeded()) {
-                        logger.info(String.format("[%s]->%s", "upload", reply.result().body().toString()));
-                        routingContext.response()
-                                .putHeader("content-type", "application/json; charset=utf-8")
-                                .end(reply.result().body().toString());
-                    } else {
-                        logger.warn("Server no reply for:upload");
-                        routingContext.response()
-                                .putHeader("content-type", "application/json; charset=utf-8")
-                                .end("Error: LocationManager server not ready!");
-                    }
-                });
-            }else{
-                logger.warn("Illegal parameters");
-                routingContext.response().setStatusCode(400).end();
-            }
+            String body = routingContext.getBodyAsString();
+            logger.debug("body string="+body);
+            JsonObject jo = routingContext.getBodyAsJson();
+            JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
+            logger.debug("upload = "+jo.toString());
+            eb.send("Server:LocationManager", upload.toString(), reply -> {
+                if (reply.succeeded()) {
+                    logger.info(String.format("[%s]->%s", "upload", reply.result().body().toString()));
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=utf-8")
+                            .end(reply.result().body().toString());
+                } else {
+                    logger.warn("Server no reply for:upload");
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=utf-8")
+                            .end("Error: LocationManager server not ready!");
+                }
+            });
         } catch (Exception e){
             e.printStackTrace();
             logger.warn("Problem handling request:"+routingContext.request().toString());
-            routingContext.response().setStatusCode(400).end();
+            routingContext.response().setStatusCode(400).setStatusMessage("Illegal parameters").end();
         }
     }
     private void pingService(){
