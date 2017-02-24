@@ -115,7 +115,7 @@
                     <excludes>
                         <exclude>**/FakeDataTest.java</exclude>
                     </excludes>
-                    <skipTests>true</skipTests>
+                    <skipTests>false</skipTests>
                 </configuration>
             </plugin>
             <plugin>

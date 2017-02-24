@@ -2,7 +2,9 @@ package com.huleibo;
 
 import common.Config;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
@@ -23,7 +25,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -32,7 +36,24 @@ import java.util.Date;
 @RunWith(VertxUnitRunner.class)
 public class LocQueryVerticleTest {
 
-    private long UID = 800001;
+    private long UID = 100001;
+    private long[] uids = {100001,100002,100003};
+    @Test
+    public void getUserLocal(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        String val = "/api/userlocal?uid=100001,100002,100003,100004&lang=en";
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getJsonArray("result") != null);
+                        async.complete();
+                    });
+                });
+    }
     @Test
     public void setUserLocal(TestContext context) throws Exception {
         Config.getInstance().getLocationManagerConfig();
@@ -40,13 +61,19 @@ public class LocQueryVerticleTest {
 
         JsonObject ulJO = new JsonObject();
         JsonObject ulcity = new JsonObject();
+        JsonObject cityinfo = new JsonObject();
         ulcity.put(UserLocal.PROVINCE, "Jiangsu");
         ulcity.put(UserLocal.CITY, "Wuxi");
-        ulJO.put(UserLocal.UID, UID);
+        cityinfo.put("en",ulcity);
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "江苏");
+        ulcity.put(UserLocal.CITY, "无锡");
+        cityinfo.put("zh",ulcity);
+        ulJO.put(UserLocal.UID, uids[0]);
         ulJO.put(UserLocal.ANALYZERALLOWED, false);
         ulJO.put(UserLocal.LANG, "en");
         ulJO.put(UserLocal.PROBABILITY, 0.8);
-        ulJO.put(UserLocal.LOCAL, ulcity);
+        ulJO.put(UserLocal.CITYINFO, cityinfo);
         String val = ulJO.encode();
         System.out.println("posting:"+val);
         vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
@@ -56,7 +83,7 @@ public class LocQueryVerticleTest {
                         async.complete();
                     });
                 })
-                .putHeader("Content-Length", val.length() + "")
+                .putHeader("Content-Length", val.getBytes().length + "")
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .write(val).end();
     }
@@ -135,6 +162,10 @@ public class LocQueryVerticleTest {
     @Test
     public void testQueryCity(TestContext context) {
         final Async async = context.async();
+        List<Future> waitList = new ArrayList<Future>();
+        for(int i = 0; i < 6; i ++){
+            waitList.add(i,Future.future());
+        }
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989",
                 response -> {
                     response.handler(body -> {

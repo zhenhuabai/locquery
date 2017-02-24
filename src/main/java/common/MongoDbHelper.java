@@ -5,6 +5,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
 import locutil.UserLocal;
@@ -12,6 +13,8 @@ import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
+
+import java.util.List;
 
 /**
  * Created by 白振华 on 2017/2/16.
@@ -97,8 +100,9 @@ public class MongoDbHelper {
         client.find(COLLECTION_USERLOCAL, query, res -> {
             if (res.succeeded() && res.result().size()>0) {
                 logger.info("removing old user locals");
-                client.removeDocument(COLLECTION_USERLOCAL, query, removal->{
+                client.removeDocuments(COLLECTION_USERLOCAL, query, removal->{
                     if(removal.succeeded()){
+                        logger.debug("insert new after removal");
                         client.insert(COLLECTION_USERLOCAL, uloc.toJsonObject(), result->{
                             if(result.succeeded()){
                                 resultHandler.handle(result);
@@ -140,6 +144,61 @@ public class MongoDbHelper {
         });
     }
 
+    //Note: one user id can only has one user local info. The new one will replace the old.
+    // {uid:xxx,locals:[{{cityinfo:{province:xxx,city:yyy},probability:n,lang:zh|cn,allowAnalyzer:true|false};
+    public static void getUserLocal(MongoClient client, long uid, String lang,
+                                    Handler<AsyncResult<JsonObject>>resultHandler){
+        JsonObject query = new JsonObject().put(UserLocal.UID, uid);
+        logger.debug("getUserLocal "+uid+","+lang);
+        client.find(COLLECTION_USERLOCAL, query, res -> {
+            if (res.succeeded() && res.result().size()>0) {
+                List<JsonObject> ret = res.result();
+                if(ret.size() > 1){
+                    logger.warn("There are multiple occurrences of uid in local db!!"+uid);
+                }
+                //JsonObject reto = ret.get(0);
+                JsonObject retJ = ret.get(0);
+                JsonObject cityJ = null;
+                JsonObject tmp = null;
+                JsonArray locals = new JsonArray();
+                Boolean analyzerEnabled = retJ.getBoolean(UserLocal.ANALYZERALLOWED);
+                //if empty query set, or analyzer is not enabled
+                tmp = retJ.getJsonObject(UserLocal.CITYINFO);
+                String validLang = lang;
+                logger.debug("tmp = "+tmp.toString()+","+lang);
+                if (tmp != null) {
+                    if (tmp.containsKey(lang)) {
+                        cityJ = tmp.getJsonObject(lang);
+                    } else {
+                        validLang = "en";//default en
+                        cityJ = tmp.getJsonObject(validLang);
+                    }
+                }
+                //treat non-exist as empty not failure
+                if (cityJ == null) {
+                    cityJ = new JsonObject();
+                }
+                JsonObject rec = new JsonObject();
+                JsonObject cityinfo = new JsonObject();
+                cityinfo.put(UserLocal.LANG, validLang);
+                cityinfo.put(UserLocal.CITYINFO, cityJ);
+                cityinfo.put(UserLocal.PROBABILITY, 1.0);//alwasy 1.0
+                locals.add(cityinfo);//just 1 here
+                rec.put(UserLocal.LOCALS, locals);
+                rec.put("uid", uid);
+                rec.put(UserLocal.ANALYZERALLOWED,analyzerEnabled == null?true:analyzerEnabled);
+                Future<JsonObject> future = Future.future();
+                future.complete(rec);
+                resultHandler.handle(future);
+            }else{
+                String message = res.cause() == null?"no user":res.cause().toString();
+                logger.error("user not found or empty:"+uid+" :"+message);
+                Future<JsonObject> future= Future.future();
+                future.fail(message);
+                resultHandler.handle(future);
+            }
+        });
+    }
     //this is for analyzer to save the analyzed result
     public static void setAnalyzedLocal(MongoClient client, JsonObject jo,
                                     Handler<AsyncResult<String>>resultHandler){
@@ -149,7 +208,7 @@ public class MongoDbHelper {
         client.find(COLLECTION_USERLOCALANALYZED, query, res -> {
             if (res.succeeded() && res.result().size()>0) {
                 logger.info("removing old analyzed result locals:"+res.result().toString());
-                client.removeDocument(COLLECTION_USERLOCALANALYZED, query, removal->{
+                client.removeDocuments(COLLECTION_USERLOCALANALYZED, query, removal->{
                     if(removal.succeeded()){
                         client.insert(COLLECTION_USERLOCALANALYZED, jo, result->{
                             if(result.succeeded()){
@@ -188,6 +247,72 @@ public class MongoDbHelper {
                         resultHandler.handle(future);
                     }
                 });
+            }
+        });
+    }
+    //retrieve a record of a uid
+    // {uid:xxx,locals:[{{cityinfo:{province:xxx,city:yyy},probability:n,lang:zh};
+    public static void getAnalyzedLocal(MongoClient client, long uid, String lang,
+                                        Handler<AsyncResult<JsonObject>>resultHandler){
+        logger.info("get analyzed result for:"+uid+","+lang);
+        JsonObject query = new JsonObject().put(UserLocal.UID, uid);
+        client.find(COLLECTION_USERLOCALANALYZED, query, res -> {
+            if (res.succeeded() && res.result().size()>0) {
+                List<JsonObject> ret = res.result();
+                if(ret.size() > 1){
+                    logger.warn("There are multiple occurrences of uid in local db!!"+uid);
+                }
+                JsonObject retJAnalyzed = ret.get(0);
+                JsonArray anaResult = retJAnalyzed.getJsonArray("result");
+                //if empty query set, or analyzer is not enabled
+                JsonArray retResult = new JsonArray();
+                JsonObject rec = new JsonObject();
+                if(anaResult != null && anaResult.size() > 0){
+                    //remove the unwanted database field
+                    anaResult.forEach(o -> {
+                        JsonObject itm = (JsonObject)o;
+                        itm.remove("count"); //this count is for internal analyzing purpose
+                        String cityinfoS = "";
+                        String validLang = lang;
+                        JsonObject tmp2 = itm.getJsonObject(UserLocal.CITYINFO);
+                        logger.debug("analyzed "+validLang+" cityinfo:"+tmp2.toString());
+                        //Cityinfo  saved in db as String
+                        if(tmp2 != null){
+                            if(tmp2.containsKey(validLang)) {
+                                cityinfoS = tmp2.getString(lang);
+                            }else{
+                                validLang = "en";//default en
+                                cityinfoS = tmp2.getString(validLang);
+                            }
+                        }
+                        JsonObject cityinfoJ = new JsonObject(cityinfoS);
+                        if(cityinfoJ == null){
+                            cityinfoJ = new JsonObject();
+                        }
+                        JsonObject cityinfo = new JsonObject();
+                        cityinfo.put(UserLocal.LANG,validLang);
+                        cityinfo.put(UserLocal.CITYINFO,cityinfoJ);
+                        cityinfo.put(UserLocal.PROBABILITY,itm.getDouble(UserLocal.PROBABILITY));
+                        retResult.add(cityinfo);
+                    });
+                    rec.put(UserLocal.LOCALS,retResult);
+                    rec.put("uid",uid);
+                    Future<JsonObject> future = Future.future();
+                    future.complete(rec);
+                    resultHandler.handle(future);
+                }else{
+                    //query failed
+                    logger.error("locals not created by analyzer yet.");
+                    Future<JsonObject> future = Future.future();
+                    future.fail("locals not analyzed");
+                    resultHandler.handle(future);
+                }
+            }else{
+                String message = res.cause() == null?"no user":res.cause().toString();
+                logger.error("user not found or empty:"+uid+" :"+message);
+                Future<JsonObject> future= Future.future();
+                future.fail(message);
+                resultHandler.handle(future);
             }
         });
     }

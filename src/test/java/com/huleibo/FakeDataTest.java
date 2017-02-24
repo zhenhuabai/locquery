@@ -15,6 +15,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -22,7 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @RunWith(VertxUnitRunner.class)
 public class FakeDataTest {
-    private long UID = 800001;
+    private long UID = 100001;
+    private long testuids[] = {100001, 100002, 100003,100004};
     private String[][] locSet = {
             {"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
             {"China","Shaanxi","Weinan","Dali","110.01195","34.79684"},
@@ -40,6 +43,7 @@ public class FakeDataTest {
     //private int [] nanjing50 = {9,1,1,1,1,1,1,1,1,1};
     private int [] nanjing80percent = {40,2,1,1,1,1,1,1,1,1};
     private int [] nanjing40weinan40percent = {20,20,3,1,1,1,1,1,1,1};
+    private int [] nanjing20weinan60percent = {10,30,3,1,1,1,1,1,1,1};
     private int [] nanjing50weinan20wuxi16percent = {25,10,8,1,1,1,1,1,1,1};
     private JsonArray generateHistory(long uid, String[][]cities, int[]distribution, int recNo, int lastdays){
         long mind = 24*3600*1000;
@@ -109,6 +113,42 @@ public class FakeDataTest {
             }
         }while (true);
     }
+    private void batchSetUserLocal(List<UserLocal> locations) throws Exception{
+        AtomicInteger result = new AtomicInteger(0);
+        int size = locations.size();
+        locations.forEach(o ->{
+            JsonObject jo = o.toJsonObject();
+            String val = jo.encode();
+            int valen = val.length();
+            try{
+                valen = val.getBytes("utf-8").length;
+            }catch (Exception e){}
+            vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
+                    response -> {
+                        response.handler(body -> {
+                            int no = result.incrementAndGet();
+                            System.out.println("Result No."+no+"+ is:"+body.toJsonObject());
+                        });
+                    })
+                    .putHeader("Content-Length", valen + "")
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .write(val).end();
+        });
+        //make sure all request handled
+        do {
+            int received = result.get();
+            System.out.println("handled: "+received+" of:"+size);
+            if(received == size){
+                break;
+            }else{
+                try {
+                    Thread.sleep(1000);
+                }catch (Exception e){
+
+                }
+            }
+        }while (true);
+    }
     @Test
     public void testGenerator(){
         generateHistory(100001,locSet,nanjing80percent,10,30);
@@ -118,28 +158,89 @@ public class FakeDataTest {
         final Async async = context.async();
         JsonArray hist = generateHistory(100001,locSet,nanjing80percent,100,30);
         postUserLocation(hist);
-        hist = generateHistory(100002,locSet,nanjing40weinan40percent,200,30);
+        hist = generateHistory(100002,locSet,nanjing20weinan60percent,200,30);
         postUserLocation(hist);
         hist = generateHistory(100003,locSet,nanjing50weinan20wuxi16percent,100,30);
         postUserLocation(hist);
         async.complete();
     }
     @Test
-    public void setUserLocal(TestContext context) throws Exception {
-        Config.getInstance().getLocationManagerConfig();
+    public void createUserLocal(TestContext context) throws Exception {
         final Async async = context.async();
 
         JsonObject ulJO = new JsonObject();
         JsonObject ulcity = new JsonObject();
+        JsonObject cityinfo = new JsonObject();
         ulcity.put(UserLocal.PROVINCE, "Jiangsu");
-        ulcity.put(UserLocal.CITY, "Wuxi");
-        ulJO.put(UserLocal.UID, UID);
+        ulcity.put(UserLocal.CITY, "nanjing");
+        cityinfo.put("en",ulcity.copy());
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "江苏");
+        ulcity.put(UserLocal.CITY, "南京");
+        cityinfo.put("zh",ulcity.copy());
+        ulJO.put(UserLocal.UID, testuids[1]);
         ulJO.put(UserLocal.ANALYZERALLOWED, false);
         ulJO.put(UserLocal.LANG, "en");
         ulJO.put(UserLocal.PROBABILITY, 0.8);
-        ulJO.put(UserLocal.LOCAL, ulcity);
+        ulJO.put(UserLocal.CITYINFO, cityinfo.copy());
+        List<UserLocal> users = new ArrayList<>();
+        users.add(0,UserLocal.parseUserLocal(ulJO));
+
+        ulJO.clear();
+        cityinfo.clear();
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "Shaanxi");
+        ulcity.put(UserLocal.CITY, "Weinan");
+        cityinfo.put("en",ulcity.copy());
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "陕西");
+        ulcity.put(UserLocal.CITY, "渭南");
+        cityinfo.put("zh",ulcity.copy());
+        ulJO.put(UserLocal.UID, testuids[0]);
+        ulJO.put(UserLocal.ANALYZERALLOWED, true);
+        ulJO.put(UserLocal.LANG, "zh");
+        ulJO.put(UserLocal.CITYINFO, cityinfo.copy());
+        users.add(0,UserLocal.parseUserLocal(ulJO));
+
+
+        ulJO.clear();
+        cityinfo.clear();
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "Jiangsu");
+        ulcity.put(UserLocal.CITY, "Wuxi");
+        cityinfo.put("en",ulcity.copy());
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "江苏");
+        ulcity.put(UserLocal.CITY, "无锡");
+        cityinfo.put("zh",ulcity.copy());
+        ulJO.put(UserLocal.UID, testuids[2]);
+        ulJO.put(UserLocal.ANALYZERALLOWED, true);
+        ulJO.put(UserLocal.LANG, "zh");
+        ulJO.put(UserLocal.CITYINFO, cityinfo.copy());
+        users.add(0,UserLocal.parseUserLocal(ulJO));
+        batchSetUserLocal(users);
+        async.complete();
+    }
+    @Test
+    public void setUserLocal(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        JsonObject ulJO = new JsonObject();
+        JsonObject ulcity = new JsonObject();
+        JsonObject cityinfo = new JsonObject();
+        ulcity.put(UserLocal.PROVINCE, "Jiangsu");
+        ulcity.put(UserLocal.CITY, "Zhenjiang");
+        cityinfo.put("en",ulcity.copy());
+        ulcity.clear();
+        ulcity.put(UserLocal.PROVINCE, "江苏");
+        ulcity.put(UserLocal.CITY, "镇江");
+        cityinfo.put("zh",ulcity);
+        ulJO.put(UserLocal.UID, testuids[0]);
+        ulJO.put(UserLocal.ANALYZERALLOWED, true);
+        ulJO.put(UserLocal.LANG, "zh");
+        ulJO.put(UserLocal.CITYINFO, cityinfo);
         String val = ulJO.encode();
-        System.out.println("posting:"+val);
+        System.out.println("posting:"+val+" size="+val.length()+":size"+val.getBytes("utf-8").length);
         vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
                 response -> {
                     response.handler(body -> {
@@ -147,7 +248,7 @@ public class FakeDataTest {
                         async.complete();
                     });
                 })
-                .putHeader("Content-Length", val.length() + "")
+                .putHeader("Content-Length", val.getBytes("utf8").length + "")
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .write(val).end();
     }
@@ -203,5 +304,58 @@ public class FakeDataTest {
         vertx.undeploy(CityWeatherServer.class.getName());
         vertx.undeploy(CountryMapServer.class.getName(), handler->{
         });
+    }
+
+    @Test
+    public void checkNonLocal(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
+        String val = "/api/isnonlocal?uid=100001&location=118.778074,32.057236&probability=0.9";
+        System.out.println("getting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getBoolean("result") != null);
+                        async.complete();
+                    });
+                });
+    }
+    //check nanjing against user 100002,
+    @Test
+    public void checkNonLocal2(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
+        String val = "/api/isnonlocal?uid=100002&location=118.778074,32.057236&probability=0.8";
+        System.out.println("getting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getBoolean("result") != null);
+                        async.complete();
+                    });
+                });
+    }
+    @Test
+    public void checkNonLocal3(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
+        String val = "/api/isnonlocal?uid=100003&location=118.778074,32.057236&probability=0.5";
+        System.out.println("getting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getBoolean("result") != null);
+                        async.complete();
+                    });
+                });
     }
 }
