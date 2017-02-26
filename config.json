@@ -39,7 +39,7 @@
       },
       "columns": ["NAME_0", "NAME_1", "NAME_2", "NAME_3"],
       "translation": {
-        "windows": "c:\\gis\\tmp\\chinese.csv",
+        "windows": "chinese.csv",
         "linux": "chinese.csv",
         "mac": "/Users/dbai/gis/locquery/chinese.csv"
       }

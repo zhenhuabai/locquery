@@ -6,6 +6,7 @@ if [ $? == 0 ]; then
 fi
 JVER=`java -version 2>&1`
 WEATHERSERVER=com.huleibo.CityWeatherServer
+LOCATIONMANAGERSERVER=com.huleibo.LocationManager
 MAPSERVER=com.huleibo.CountryMapServer
 HTTPSERVER=com.huleibo.LocQueryVerticle
 echo $JVER|grep "\"1.8."
@@ -42,4 +43,5 @@ while [ $COUNTER -lt $in ]; do
 	let COUNTER=COUNTER+1
 done
 vertx run -cp $exefile $WEATHERSERVER --cluster&
+vertx run -cp $exefile $LOCATIONMANAGERSERVER --cluster&
 vertx run -cp $exefile $HTTPSERVER --cluster&

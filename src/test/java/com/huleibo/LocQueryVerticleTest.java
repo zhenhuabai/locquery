@@ -1,6 +1,7 @@
 package com.huleibo;
 
 import common.Config;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -39,6 +40,22 @@ public class LocQueryVerticleTest {
     private long UID = 100001;
     private long[] uids = {100001,100002,100003};
     @Test
+    public void getIsnonLocal(TestContext context) throws Exception {
+        final Async async = context.async();
+        //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
+        String val = "/api/isnonlocal?uid=100001&location=118.778074,32.057236&probability=0.9";
+        System.out.println("getting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result-->:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getString("result") != null);
+                        async.complete();
+                    });
+                });
+    }
+    @Test
     public void getUserLocal(TestContext context) throws Exception {
         final Async async = context.async();
 
@@ -49,10 +66,69 @@ public class LocQueryVerticleTest {
                     response.handler(body -> {
                         System.out.println("result:"+body.toString());
                         JsonObject res = body.toJsonObject();
-                        context.assertTrue(body.toJsonObject().getJsonArray("result") != null);
+                        context.assertTrue(body.toJsonObject().getString("result") != null);
                         async.complete();
                     });
                 });
+    }
+
+    @Test
+    public void getUserLocalErr2(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        String val = "/api/userlocal?uid=100001";
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    System.out.println("received :"+response.statusCode());
+                    context.assertTrue(response.statusCode()==400);
+                    context.assertTrue(response.statusMessage().contains("Illegal"));
+                    async.complete();
+                });
+    }
+    @Test
+    public void getUserLocalErr1(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        String val = "/api/userlocal?uid=100001&lang=";
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    System.out.println("received :"+response.statusCode());
+                    context.assertTrue(response.statusCode()==400);
+                    context.assertTrue(response.statusMessage().contains("Illegal"));
+                    async.complete();
+                });
+    }
+    @Test
+    public void setUserLocalErr1(TestContext context) throws Exception {
+        Config.getInstance().getLocationManagerConfig();
+        final Async async = context.async();
+
+        JsonObject ulJO = new JsonObject();
+        JsonObject ulcity = new JsonObject();
+        JsonObject cityinfo = new JsonObject();
+        ulcity.put(UserLocal.PROVINCE, "Jiangsu");
+        ulcity.put(UserLocal.CITY, "Wuxi");
+        cityinfo.put("en",ulcity.copy());
+        ulJO.put(UserLocal.UID, 100005);
+        ulJO.put(UserLocal.ANALYZERALLOWED, false);
+        //ulJO.put(UserLocal.LANG, "en");
+        //ulJO.put(UserLocal.PROBABILITY, 0.8);
+        ulJO.put(UserLocal.CITYINFO, cityinfo);
+        String val = ulJO.encode();
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("setUserLocal:"+body.toString());
+                        context.assertTrue(body.toJsonObject().getString("result").equals("OK"));
+                        async.complete();
+                    });
+                })
+                .putHeader("Content-Length", val.getBytes("utf-8").length + "")
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .write(val).end();
     }
     @Test
     public void setUserLocal(TestContext context) throws Exception {
@@ -64,7 +140,7 @@ public class LocQueryVerticleTest {
         JsonObject cityinfo = new JsonObject();
         ulcity.put(UserLocal.PROVINCE, "Jiangsu");
         ulcity.put(UserLocal.CITY, "Wuxi");
-        cityinfo.put("en",ulcity);
+        cityinfo.put("en",ulcity.copy());
         ulcity.clear();
         ulcity.put(UserLocal.PROVINCE, "江苏");
         ulcity.put(UserLocal.CITY, "无锡");
@@ -79,11 +155,12 @@ public class LocQueryVerticleTest {
         vertx.createHttpClient().put(port, "localhost", "/api/userlocal",
                 response -> {
                     response.handler(body -> {
+                        System.out.println("setUserLocal:"+body.toString());
                         context.assertTrue(body.toJsonObject().getString("result").equals("OK"));
                         async.complete();
                     });
                 })
-                .putHeader("Content-Length", val.getBytes().length + "")
+                .putHeader("Content-Length", val.getBytes("utf-8").length + "")
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .write(val).end();
     }
@@ -102,9 +179,30 @@ public class LocQueryVerticleTest {
                 response -> {
                     response.handler(body -> {
                         System.out.println("response 2:"+body.toString());
-                        context.assertTrue(body.toJsonObject().getString("result").equals("OK"));
+                        context.assertTrue(body.toJsonObject().getString("result").contains("error"));
                         async.complete();
                     });
+                })
+                .putHeader("Content-Length", val.length() + "")
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .write(val).end();
+    }
+    @Test
+    public void uploadUserLocationErr1(TestContext context) throws Exception {
+        Config.getInstance().getLocationManagerConfig();
+        final Async async = context.async();
+        JsonObject jo = new JsonObject();
+        jo.put("lat",38.01);
+        jo.put("lon",128.2);
+        jo.put("timestamp",System.currentTimeMillis());
+        String val = jo.encode();
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().post(port, "localhost", "/api/userlocation",
+                response -> {
+                    System.out.println("received :"+response.statusCode());
+                    context.assertTrue(response.statusCode()==400);
+                    context.assertTrue(response.statusMessage().contains("Illegal"));
+                    async.complete();
                 })
                 .putHeader("Content-Length", val.length() + "")
                 .putHeader("content-type", "application/json; charset=utf-8")
@@ -141,10 +239,7 @@ public class LocQueryVerticleTest {
 
     @After
     public void tearDown(TestContext context) {
-        vertx.undeploy(CityWeatherServer.class.getName());
-        vertx.undeploy(CountryMapServer.class.getName(), handler->{
-            //vertx.close(LocQueryVerticle.class.getName());
-        });
+        vertx.close(context.asyncAssertSuccess());
     }
 
     @Test
@@ -163,7 +258,7 @@ public class LocQueryVerticleTest {
     public void testQueryCity(TestContext context) {
         final Async async = context.async();
         List<Future> waitList = new ArrayList<Future>();
-        for(int i = 0; i < 6; i ++){
+        for(int i = 0; i < 5; i ++){
             waitList.add(i,Future.future());
         }
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989",
@@ -172,7 +267,7 @@ public class LocQueryVerticleTest {
                         System.out.print(body.toString());
                         boolean en = body.toString().contains("Weinan");
                         context.assertTrue(en);
-                        async.complete();
+                        waitList.get(0).complete();
                     });
                 });
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=zh",
@@ -181,7 +276,7 @@ public class LocQueryVerticleTest {
                         System.out.print(body.toString());
                         boolean ch = body.toString().contains("渭南");
                         context.assertTrue(ch);
-                        async.complete();
+                        waitList.get(1).complete();
                     });
                 });
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=en",
@@ -190,16 +285,16 @@ public class LocQueryVerticleTest {
                         System.out.print(body.toString());
                         boolean en = body.toString().contains("Weinan");
                         context.assertTrue(en);
-                        async.complete();
+                        waitList.get(2).complete();
                     });
                 });
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=122.715721&lat=52.949659&lang=zh",
                 response -> {
                     response.handler(body -> {
                         System.out.print(body.toString());
-                        boolean en = body.toString().contains("Mohe");
+                        boolean en = body.toString().contains("漠河");
                         context.assertTrue(en);
-                        async.complete();
+                        waitList.get(3).complete();
                     });
                 });
         vertx.createHttpClient().getNow(port, "localhost", "/api/city?lon=109.594513&lat=34.644989&lang=none",
@@ -208,9 +303,12 @@ public class LocQueryVerticleTest {
                         System.out.print(body.toString());
                         boolean ch = body.toString().contains("Weinan");
                         context.assertTrue(ch);
-                        async.complete();
+                        waitList.get(4).complete();
                     });
                 });
+        CompositeFuture.all(waitList).setHandler(cmplete->{
+            async.complete();
+        });
     }
     @Test
     public void testQueryCityErr(TestContext context) {

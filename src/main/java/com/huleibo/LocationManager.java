@@ -18,6 +18,7 @@ import sun.misc.Signal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -31,37 +32,70 @@ import java.util.function.Function;
  * {cmd:setlocal, param:{uid:long,country:string, province:string,city:string,county:string}}
  * {cmd:getlocals, param:{uids:[1,2,...n], lang:string}}
  * {cmd:isroaming, param:{uid:long, lon:double, lat:double, probability: 0.x}}
+ *
+ * return {result:"OK"} if command executed successfully
+ * return {result:"error:[reason]"} if command failed
  */
 public class LocationManager extends LocApp {
-    private static final String[] cmds =
-            {"upload","setlocal","getlocal","isroaming"};
+    private boolean initialized = false;
+    private MongoClient mongoClient = null;
     private HashMap<String, Function<JsonObject,Future<JsonObject>>> cmdDispatcher = new
             HashMap<>();
     private static final Logger logger = LogManager.getLogger(LocationManager.class);
     public void handle(Signal signalName) {
         logger.warn("Reveived signal:"+signalName.toString());
         if(signalName.getName().equalsIgnoreCase("term")){
-            if(eb != null) {
-                eb.close(handler -> {
-                    logger.info("Application closed");
-                });
-            }
+            vertx.close(res->{
+                logger.warn("Closed Location manager server!");
+            });
         }
     }
-    private MongoClient mongoClient = null;
 
+    public void init(Future<Void> fut){
+        logger.debug("initializing LocationManager");
+        vertx.executeBlocking(future -> {
+            logger.debug("initializing mongoclient and commands");
+            mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
+            installCommandHandler();
+            Set<String> keys = cmdDispatcher.keySet();
+            keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
+            future.complete();
+        }, res -> {
+            fut.complete();
+            initialized = true;
+            Set<String> keys = cmdDispatcher.keySet();
+            keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
+            logger.info("Location Manager initialized."+mongoClient);
+            logger.info("Location Manager initialized.");
+        });
+    }
     public void init(){
         logger.debug("initializing LocationManager");
-        mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
-        installCommandHandler();
+        if(!initialized) {
+            vertx.executeBlocking(future -> {
+                mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
+                installCommandHandler();
+                Set<String> keys = cmdDispatcher.keySet();
+                keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
+                future.complete();
+            }, res -> {
+                initialized = true;
+            });
+        }else{
+            logger.info("Location Manager was initialized before.");
+        }
     }
     @Override
+    //public void start(Future<Void>fut) throws Exception {
     public void start() throws Exception {
         eb = vertx.eventBus();
         init();
         eb.consumer("Server:LocationManager", message -> {
             String uris = message.body().toString();
             try {
+                if(!initialized){
+                    throw new Exception("Location Manager still in initialization");
+                }
                 JsonObject cmd = new JsonObject(uris);
                 logger.debug("received:"+cmd.toString());
                 if(!cmd.isEmpty()){
@@ -74,32 +108,46 @@ public class LocationManager extends LocApp {
                                 message.reply(result.result().toString());
                             }else{
                                 logger.debug("Failed operation:"+cmdS+" msg:"+result.cause().getMessage());
-                                message.reply("{\"error\":"+result.cause().toString()+"\"}");
+                                JsonObject errorResult = new JsonObject();
+                                String errmsg = "error:"+result.cause().getMessage();
+                                errorResult.put("result",errmsg);
+                                message.reply(errorResult.toString());
                             }
                         });
                     }else{
-                        message.reply("{\"error\":\"command not supported!\"}");
+                        JsonObject errorResult = new JsonObject();
+                        String errmsg = "error: command not supported";
+                        errorResult.put("result",errmsg);
+                        message.reply(errorResult.toString());
+                        logger.error(errmsg);
                     }
                 }else{
-                    logger.error("Empty command!");
-                    message.reply("{\"error\":\" no command!\"}");
+                    JsonObject errorResult = new JsonObject();
+                    String errmsg = "error: Empty Command";
+                    errorResult.put("result",errmsg);
+                    message.reply(errorResult.toString());
+                    logger.error(errmsg);
                 }
             }catch (Exception e){
                 e.printStackTrace();
-                message.reply("{\"error\":\""+e.getMessage()+"\"}");
+                JsonObject errorResult = new JsonObject();
+                String errmsg = "error:"+e.getMessage();
+                errorResult.put("result",errmsg);
+                message.reply(errorResult.toString());
+                logger.error(errmsg);
             }
         });
     }
     @Override
     public void stop(){
-        mongoClient.close();
-        eb.close(handler->{
-            logger.debug("stopped location manager");
-        });
+        if(mongoClient != null) {
+            mongoClient.close();
+        }
     }
     private void installCommandHandler() {
         //function handling upload command
         //we don't check parameters, assuming caller knows what is doing
+        logger.debug("installing commands");
         cmdDispatcher.put("upload", entries -> {
             JsonObject ret = new JsonObject();
             Future<JsonObject> dbResult = Future.future();
@@ -130,18 +178,24 @@ public class LocationManager extends LocApp {
                 }).compose(city -> {
                     //save user location info to db
                     JsonObject cityJo = new JsonObject(city);
-                    ul.setCityInfo(cityJo);
-                    MongoDbHelper.putUserLocation(mongoClient, ul, res -> {
-                        if (res.succeeded()) {
-                            ret.put("result", "OK");
-                            dbResult.complete(ret);
-                            logger.debug("upload:" + res.result());
-                        } else {
-                            logger.error("failed upload:" + res.result());
-                            ret.put("result", "error:upload");
-                            dbResult.fail(ret.toString());
-                        }
-                    });
+                    if(cityJo != null && !cityJo.isEmpty()) {
+                        ul.setCityInfo(cityJo);
+                        MongoDbHelper.putUserLocation(mongoClient, ul, res -> {
+                            if (res.succeeded()) {
+                                ret.put("result", "OK");
+                                dbResult.complete(ret);
+                                logger.debug("upload:" + res.result());
+                            } else {
+                                logger.error("failed upload:" + res.result());
+                                ret.put("result", "error:upload");
+                                dbResult.fail(ret.toString());
+                            }
+                        });
+                    }else{
+                        String err = String.format("No city by[%f,%f]",ul.lon,ul.lat);
+                        logger.warn(err);
+                        dbResult.fail(err);
+                    }
                 }, dbResult);
             }
             return dbResult;
@@ -250,7 +304,8 @@ public class LocationManager extends LocApp {
                 });
             });
             CompositeFuture.all(ftList).setHandler(handle -> {
-                okResult.put("result", resultSet);
+                okResult.put("result", "OK");
+                okResult.put("data", resultSet);
                 logger.debug("getlocals:" + okResult.toString());
                 dbResult.complete(okResult);
             });
@@ -336,7 +391,7 @@ public class LocationManager extends LocApp {
                                         */
                                     }
                                 }
-                                JsonObject rslt = new JsonObject().put("result", isnonlocal);
+                                JsonObject rslt = new JsonObject().put("result", "OK").put("data",isnonlocal);
                                 dbResult.complete(rslt);
                             } else {
                                 logger.error("Problem searching in location history");
@@ -349,4 +404,5 @@ public class LocationManager extends LocApp {
             return dbResult;
         });
     }
+
 }

@@ -27,6 +27,7 @@ import java.util.Map;
  * Created by 白振华 on 2017/1/11.
  * This server convert [lat,lon] to city
  * return String converted by json object
+ * Empty{} will return if there is no such a city
  */
 public class CountryMapServer extends LocApp{
     public void handle(Signal signalName) {
@@ -41,10 +42,10 @@ public class CountryMapServer extends LocApp{
         }
     }
     private int port;
-    private String mappath;
+    private static String mappath;
     public static boolean inDebug = false;
-    private String mapLname;
-    private boolean translationLoaded = false;
+    private static String mapLname;
+    private static boolean translationLoaded = false;
     private static Map<String,String> translation = new HashMap<String, String>();
     private static final Logger logger = LogManager.getLogger(CountryMapServer.class);
     //Logger Log = Logger.getLogger(this.getClass().getName());
