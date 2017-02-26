@@ -73,7 +73,11 @@ public class UserLocal {
             }else if(probability<0 || probability >1){
                 throw new Exception("wrong range");
             }
+            //TODO: don't let lang be a must
             String currentLang = jo.getString(LANG);
+            if(currentLang == null){
+                currentLang = "en";
+            }
             JsonObject localCityinfo = jo.getJsonObject(CITYINFO);
             Long uid = jo.getLong(UID);
             if(uid != null &&  analyzerAllowed!= null &&

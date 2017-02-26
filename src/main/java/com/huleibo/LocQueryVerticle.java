@@ -15,6 +15,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import locsvc.CityQuery;
+import locutil.UserLocal;
 import locutil.UserLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,9 +24,21 @@ import sun.misc.SignalHandler;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.util.DoubleSummaryStatistics;
 
 /**
  * Created by 白振华 on 2017/1/7.
+ * This class is the http server which accepts incoming requests from the assigned
+ * port and dispatch them to the corresponding servers.
+ * for location to city:
+ * /api/city?lon=xxx&lat=yyy&lang=[zh|en]
+ * for weather query:
+ * /api/weather?location=[city name|lon,lat]
+ * for location manager:
+ * a.upload location: post /api/userlocation with json data{uid:xxx,lon:yyy,lat:zzz,timestamp:ttttt}
+ * b.set user local city: put /api/userlocal with json data{en:{province:yyy,city:zzz},zh:{province:ttt,city:bbb}}
+ * c.query user local city: get /api/userlocal?uid=[uid1,uid2,uid3...]&lang=en
+ * d.check if a user is outside local city: get /api/isnonlocal?uid=xxx&location=yyy,zzz&probability=0.9
  */
 public class LocQueryVerticle extends LocApp {
     private HttpServer theServer;
@@ -204,7 +217,9 @@ public class LocQueryVerticle extends LocApp {
                 param.put("probability",probability);
                 JsonObject isroaming = new JsonObject().put("cmd","isnonlocal")
                         .put("param",param);
-                if(uid == null || location == null || locs == null ||
+                if(uid == null || uid.isEmpty() ||
+                        location == null || location.isEmpty()||
+                        locs == null ||
                         lon == null || lat == null || probability<0||probability>1){
                     logger.error("parameters not properly set");
                     throw new Exception("Illegal parameters");
@@ -251,7 +266,8 @@ public class LocQueryVerticle extends LocApp {
                         .put("param",param)
                         .put("lang",lang);
                 logger.debug("process uid:"+uid+" lang:"+lang);
-                if(uid == null || lang == null || lang.toLowerCase().matches("zh\\|en")){
+                if(uid == null || lang == null ||
+                        uid.isEmpty()||lang.isEmpty()||!lang.toLowerCase().matches("zh|en")){
                     logger.error("parameters not properly set");
                     throw new Exception("Illegal parameters");
                 }
@@ -274,8 +290,8 @@ public class LocQueryVerticle extends LocApp {
             }
         } catch (Exception e){
             e.printStackTrace();
-            logger.warn("Problem handling request:"+routingContext.request().toString());
-            routingContext.response().setStatusMessage(e.toString()).setStatusCode(400).end();
+            logger.warn("Problem handling request:"+routingContext.request().absoluteURI());
+            routingContext.response().setStatusMessage("Illegal Arguments").setStatusCode(400).end();
         }
     }
     public void setUserLocal(RoutingContext routingContext) {
@@ -284,6 +300,8 @@ public class LocQueryVerticle extends LocApp {
             logger.debug("handling setUserLocal:"+request);
             String body = routingContext.getBodyAsString();
             JsonObject jo = routingContext.getBodyAsJson();
+            //check params
+            checkSetUserLocalParams(jo);
             JsonObject setlocal = new JsonObject().put("cmd","setlocal").put("param",jo);
             eb.send("Server:LocationManager", setlocal.toString(), reply -> {
                 if (reply.succeeded()) {
@@ -311,6 +329,7 @@ public class LocQueryVerticle extends LocApp {
             String body = routingContext.getBodyAsString();
             logger.debug("body string="+body);
             JsonObject jo = routingContext.getBodyAsJson();
+            checkUploadUserLocationParams(jo);
             JsonObject upload = new JsonObject().put("cmd","upload").put("param",jo);
             logger.debug("upload = "+jo.toString());
             eb.send("Server:LocationManager", upload.toString(), reply -> {
@@ -330,6 +349,59 @@ public class LocQueryVerticle extends LocApp {
             e.printStackTrace();
             logger.warn("Problem handling request:"+routingContext.request().toString());
             routingContext.response().setStatusCode(400).setStatusMessage("Illegal parameters").end();
+        }
+    }
+    private void checkUploadUserLocationParams(JsonObject jo) throws IllegalArgumentException{
+        if(jo == null){
+            throw new IllegalArgumentException("Illegal arguments");
+        }else{
+            Integer uid = jo.getInteger("uid");
+            Double lon = jo.getDouble("lon");
+            Double lat = jo.getDouble("lat");
+            Long tm = jo.getLong("timestamp");
+            if(uid == null || lon == null || lat == null || tm == null){
+                throw new IllegalArgumentException("Illegal arguments");
+            }
+        }
+    }
+    private void checkSetUserLocalParams(JsonObject jo) throws IllegalArgumentException{
+        if(jo == null){
+            throw new IllegalArgumentException("Illegal arguments");
+        }else{
+            Integer uid = jo.getInteger(UserLocal.UID);
+            //TODO:don't check this for now
+            Double prob = 0.5;//jo.getDouble(UserLocal.PROBABILITY);
+            JsonObject cityinfo = jo.getJsonObject(UserLocal.CITYINFO);
+            Boolean isallow = jo.getBoolean(UserLocal.ANALYZERALLOWED);
+            if(uid == null || prob == null || cityinfo == null || isallow == null){
+                throw new IllegalArgumentException("Illegal arguments");
+            }
+            JsonObject en = cityinfo.getJsonObject("en");
+            JsonObject zh = cityinfo.getJsonObject("zh");
+            if(en == null || en.isEmpty()){
+                if(zh == null || zh.isEmpty()){
+                    throw new IllegalArgumentException("Illegal arguments");
+                }else{
+                    String province = zh.getString(UserLocal.PROVINCE);
+                    String city = zh.getString(UserLocal.CITY);
+                    if(province == null || province.isEmpty() ||
+                            city == null || city.isEmpty()){
+                        throw new IllegalArgumentException("Illegal arguments");
+                    }
+                }
+            }
+            if(zh == null || zh.isEmpty()){
+                if(en == null || en.isEmpty()){
+                    throw new IllegalArgumentException("Illegal arguments");
+                }else{
+                    String province = en.getString(UserLocal.PROVINCE);
+                    String city = en.getString(UserLocal.CITY);
+                    if(province == null || province.isEmpty() ||
+                            city == null || city.isEmpty()){
+                        throw new IllegalArgumentException("Illegal arguments");
+                    }
+                }
+            }
         }
     }
     private void pingService(){

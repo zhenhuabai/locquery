@@ -22,6 +22,12 @@ import java.util.TimerTask;
  * Created by 白振华 on 2017/2/20.
  * This utility class calculates the local cities from their occurrence in the location history
  * The final result is stored in MongoDbHelper.COLLECTION_USERLOCALANALYZED
+ * the process is:
+ * 1. retrieving the list of the city by user id, in the history table
+ * 2. counting the total number of the city
+ * 3. counting the total number of each city
+ * 4. calculating the percentage of each city in the total
+ * 5. if the percentage of a city meets the criteria, store it in analyzed table
  */
 public final class LocationAnalyzer {
     private static final Logger logger = LogManager.getLogger(LocationAnalyzer.class);
@@ -107,9 +113,13 @@ public final class LocationAnalyzer {
                     JsonObject item = ja.getJsonObject(j);
                     JsonObject cityinfo = item.getJsonObject("_id").getJsonObject("cityinfo");
                     if(cityinfo != null) {
-                        //document $cityinfo was expanded to string value in query
-                        JsonObject en = new JsonObject(cityinfo.getString("en"));
-                        String cityName = en.getString("city");
+                        //document $cityinfo was string value from MapServer
+                        if(cityinfo.isEmpty()){
+                            logger.error("There are empty cityinfo in history!!!");
+                        }else {
+                            JsonObject en = new JsonObject(cityinfo.getString("en"));
+                            String cityName = en.getString("city");
+                        }
                         Integer number = item.getInteger("count");
                         occurance[j] = number;
                         total += number;

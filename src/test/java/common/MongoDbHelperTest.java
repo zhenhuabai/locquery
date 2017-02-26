@@ -77,10 +77,10 @@ public class MongoDbHelperTest {
         //String json = "{\"result\":[{\"cityinfo\":{\"en\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\",\"zh\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\"},\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001,\"_id\":\"58ac6ce76168900830699ef5\"}";
 //                String json = "{\"result\":[\"cityinfo\":{\"en\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\",\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001}";
 
-        String json = "{\"result\":[{\"cityinfo\":{\"en\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\",\"zh\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\"},\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001}";
+        //String json = "{\"result\":[{\"cityinfo\":{\"en\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\",\"zh\":\"{\"country\":\"China\",\"province\":\"Jiangsu\",\"city\":\"Nanjing\",\"county\":\"Nanjing\",\"lang\":\"en\"}\"},\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001}";
 
 
-        //String json = "{\"result\":[{\"cityinfo\":{\"en\":33},\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001}";
+        String json = "{\"result\":[{\"cityinfo\":{\"en\":33},\"probability\":1.0,\"count\":10}],\"timestamp\":1487695079043,\"total_records\":10,\"uid\":100001}";
         JsonObject toStore = new JsonObject(json);
         System.out.println("saving:"+toStore.toString());
         MongoDbHelper.setAnalyzedLocal(client,toStore, res->{
