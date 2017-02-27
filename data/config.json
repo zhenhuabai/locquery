@@ -1,8 +1,8 @@
 {
-  "http.port" : 28080,
+  "http.port" : 18080,
   "locationmanager" : {
     "mongodburl": "mongodb://localhost:27017",
-    "database": "locquery",
+    "database": "db4buildandtest",
     "locationanalyzer" : {
       "pastdays":90,
       "thresholdpercentage": 0.2
@@ -10,7 +10,7 @@
   },
   "weather" : {
     "citylist": {
-      "windows": "data\\supportedcities.csv",
+      "windows": "c:\\gis\\weather\\supportedcities.csv",
       "linux": "/opt/locquery/mapcities.2nd.csv",
       "mac": "/Users/dbai/gis/locquery/supportedcities.csv"
     },
@@ -20,7 +20,7 @@
       "mac": "/Users/dbai/gis/locquery/weatherdb.csv"
     },
     "sourcekeys":{
-      "xinzhi": "tefev55ybfpuqzh3"
+      "xinzhi": "z1rpwxehv8jexdwg"
     },
     "syncinterval": 2
   },
@@ -39,7 +39,7 @@
       },
       "columns": ["NAME_0", "NAME_1", "NAME_2", "NAME_3"],
       "translation": {
-        "windows": "data\\chinese.csv",
+        "windows": "chinese.csv",
         "linux": "chinese.csv",
         "mac": "/Users/dbai/gis/locquery/chinese.csv"
       }
