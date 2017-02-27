@@ -40,6 +40,22 @@ public class LocQueryVerticleTest {
     private long UID = 100001;
     private long[] uids = {100001,100002,100003};
     @Test
+    public void getIsnonLocalErr(TestContext context) throws Exception {
+        final Async async = context.async();
+        //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
+        String val = "/api/isnonlocal?uid=100006&location=102.714601,25049153&probability=0.5";
+        System.out.println("getting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result-->:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getString("result") != null);
+                        async.complete();
+                    });
+                });
+    }
+    @Test
     public void getIsnonLocal(TestContext context) throws Exception {
         final Async async = context.async();
         //{"China","Jiangsu","Nanjing","Nanjing","118.778074","32.057236"},
@@ -72,6 +88,22 @@ public class LocQueryVerticleTest {
                 });
     }
 
+    @Test
+    public void getUserLocalErr3(TestContext context) throws Exception {
+        final Async async = context.async();
+
+        String val = "/api/userlocal?uid=100006&lang=en";
+        System.out.println("posting:"+val);
+        vertx.createHttpClient().getNow(port, "localhost", val,
+                response -> {
+                    response.handler(body -> {
+                        System.out.println("result:"+body.toString());
+                        JsonObject res = body.toJsonObject();
+                        context.assertTrue(body.toJsonObject().getString("result") != null);
+                        async.complete();
+                    });
+                });
+    }
     @Test
     public void getUserLocalErr2(TestContext context) throws Exception {
         final Async async = context.async();

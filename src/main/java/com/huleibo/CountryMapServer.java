@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * Created by 白振华 on 2017/1/11.
- * This server convert [lat,lon] to city
+ * This server convert [lon,lat] to city
  * return String converted by json object
  * Empty{} will return if there is no such a city
  */
