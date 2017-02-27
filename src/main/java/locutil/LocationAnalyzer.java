@@ -106,7 +106,7 @@ public final class LocationAnalyzer {
             if(result.succeeded()) {
                 logger.debug("mongo aggregate result:"+result.result().toString());
                 JsonArray ja = result.result().getJsonArray("result");
-                logger.debug("mongo aggregate result:"+ja.encodePrettily());
+                logger.debug("mongo aggregate result pretty:"+ja.encodePrettily());
                 int total = 0;
                 int[] occurance = new int[ja.size()];
                 for (int j = 0; j < ja.size(); j++) {

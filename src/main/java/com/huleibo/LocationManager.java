@@ -56,6 +56,7 @@ public class LocationManager extends LocApp {
         vertx.executeBlocking(future -> {
             logger.debug("initializing mongoclient and commands");
             mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
+            LocationAnalyzer.startLocalLocation(mongoClient);
             installCommandHandler();
             Set<String> keys = cmdDispatcher.keySet();
             keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
@@ -74,6 +75,7 @@ public class LocationManager extends LocApp {
         if(!initialized) {
             vertx.executeBlocking(future -> {
                 mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
+                LocationAnalyzer.startLocalLocation(mongoClient);
                 installCommandHandler();
                 Set<String> keys = cmdDispatcher.keySet();
                 keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
@@ -163,8 +165,8 @@ public class LocationManager extends LocApp {
                 chain.compose(v -> {
                     Future<String> cityFinding = Future.future();
                     StringBuffer sb = new StringBuffer();
-                    sb.append(String.valueOf(ul.lat)).append(",")
-                            .append(String.valueOf(ul.lon)).append(",lm");
+                    sb.append(String.valueOf(ul.lon)).append(",")
+                            .append(String.valueOf(ul.lat)).append(",lm");
                     eb.send("Server:China", sb.toString(), reply -> {
                         if (reply.succeeded()) {
                             logger.info(String.format("[%s]->%s", param.toString(), reply.result().body().toString()));
@@ -351,7 +353,7 @@ public class LocationManager extends LocApp {
                     //We've known the city names, check them in history
                     JsonObject foundcity =  new JsonObject(city);
                     logger.debug("City from MapServer :"+foundcity.toString());
-                    if (foundcity == null) {
+                    if (foundcity == null || foundcity.isEmpty()) {
                         logger.error("no city info found:"+foundcity.toString());
                         dbResult.fail("no city found from MapServer");
                     } else {

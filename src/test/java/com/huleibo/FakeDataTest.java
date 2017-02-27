@@ -64,8 +64,8 @@ public class FakeDataTest {
                     if(index <= uplimit[v]) {
                         JsonObject jo = new JsonObject();
                         jo.put("uid",uid);
-                        jo.put("lat",Double.parseDouble(cities[v][4]));
-                        jo.put("lon",Double.parseDouble(cities[v][5]));
+                        jo.put("lon",Double.parseDouble(cities[v][4]));
+                        jo.put("lat",Double.parseDouble(cities[v][5]));
                         double dd = Math.random();
                         int backdays = (int)(dd * lastdays);
                         long thatdaymillis = currentMillis - backdays * mind;
