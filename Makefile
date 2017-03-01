@@ -11,8 +11,10 @@ SVNRELDIR = $(SVNDIR)/release
 RELEASE = $(FATDIR)/*-fat.jar
 
 $(RELEASE): build releasedir copyfiles
-
+package: notestbuild releasedir copyfiles
 .PHONY: $(RELEASE)
+notestbuild:
+	mvn clean package -Dmaven.test.skip=true
 build:
 	mvn clean package
 releasedir:
@@ -46,5 +48,6 @@ svndir:
 	mkdir -p $(SVNRELDIR)
 released:
 	cp -rf $(OUTDIR)/locquery_r_*.tar.gz  $(SVNRELDIR)
+	cp -rf $(TEMPLATEDIR)/readme.txt  $(SVNRELDIR)/readme_r_$(FATVER).txt
 clean:
 	rm -rf $(RELEASEDIR);rm -rf $(SVNDIR)

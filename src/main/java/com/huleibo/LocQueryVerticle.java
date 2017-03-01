@@ -227,9 +227,12 @@ public class LocQueryVerticle extends LocApp {
                 eb.send("Server:LocationManager", isroaming.toString(), reply -> {
                     if (reply.succeeded()) {
                         logger.info(String.format("[%s]->%s", "isnonlocal", reply.result().body().toString()));
-                        routingContext.response()
-                                .putHeader("content-type", "application/json; charset=utf-8")
-                                .end(reply.result().body().toString());
+                        String bodyS = reply.result().body().toString();
+                        if(!formatErrorResponsePerBody(routingContext, bodyS)){
+                            routingContext.response()
+                                    .putHeader("content-type", "application/json; charset=utf-8")
+                                    .end(bodyS);
+                        }
                     } else {
                         logger.warn("Server no reply for:isroaming");
                         routingContext.response()
@@ -244,7 +247,7 @@ public class LocQueryVerticle extends LocApp {
         } catch (Exception e){
             e.printStackTrace();
             logger.warn("Problem handling request:"+routingContext.request().toString());
-            routingContext.response().setStatusMessage(e.toString()).setStatusCode(400).end();
+            routingContext.response().setStatusMessage("Illegal parameters").setStatusCode(400).end();
         }
     }
     public void getUserLocal(RoutingContext routingContext) {
@@ -274,9 +277,11 @@ public class LocQueryVerticle extends LocApp {
                 eb.send("Server:LocationManager", getlocal.toString(), reply -> {
                     if (reply.succeeded()) {
                         logger.info(String.format("[%s]->%s", "getlocal", reply.result().body().toString()));
-                        routingContext.response()
-                                .putHeader("content-type", "application/json; charset=utf-8")
-                                .end(reply.result().body().toString());
+                        if(!formatErrorResponsePerBody(routingContext, reply.result().body().toString())) {
+                            routingContext.response()
+                                    .putHeader("content-type", "application/json; charset=utf-8")
+                                    .end(reply.result().body().toString());
+                        }
                     } else {
                         logger.warn("Server no reply for:getlocal");
                         routingContext.response()
@@ -306,9 +311,11 @@ public class LocQueryVerticle extends LocApp {
             eb.send("Server:LocationManager", setlocal.toString(), reply -> {
                 if (reply.succeeded()) {
                     logger.info(String.format("[%s]->%s", "setlocal", reply.result().body().toString()));
-                    routingContext.response()
-                            .putHeader("content-type", "application/json; charset=utf-8")
-                            .end(reply.result().body().toString());
+                    if(!formatErrorResponsePerBody(routingContext, reply.result().body().toString())) {
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    }
                 } else {
                     logger.warn("Server no reply for:setlocal");
                     routingContext.response()
@@ -335,9 +342,11 @@ public class LocQueryVerticle extends LocApp {
             eb.send("Server:LocationManager", upload.toString(), reply -> {
                 if (reply.succeeded()) {
                     logger.info(String.format("[%s]->%s", "upload", reply.result().body().toString()));
-                    routingContext.response()
-                            .putHeader("content-type", "application/json; charset=utf-8")
-                            .end(reply.result().body().toString());
+                    if(!formatErrorResponsePerBody(routingContext, reply.result().body().toString())) {
+                        routingContext.response()
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(reply.result().body().toString());
+                    }
                 } else {
                     logger.warn("Server no reply for:upload");
                     routingContext.response()
@@ -403,6 +412,26 @@ public class LocQueryVerticle extends LocApp {
                 }
             }
         }
+    }
+    private boolean formatErrorResponsePerBody(RoutingContext context, String bodyString){
+        boolean processed = false;
+        if(bodyString == null || bodyString.isEmpty()){
+            //internal server err
+            context.response().setStatusMessage("No valid data").setStatusCode(500).end();
+            processed = true;
+        } else {
+            if(bodyString.toLowerCase().contains("error")){
+                JsonObject result = new JsonObject(bodyString);
+                String errmsg = result.getString("result");
+                if(errmsg == null || errmsg.isEmpty()){
+                    context.response().setStatusCode(400).setStatusMessage(bodyString).end();
+                } else {
+                    context.response().setStatusCode(400).setStatusMessage(errmsg).end();
+                }
+                processed = true;
+            }
+        }
+        return processed;
     }
     private void pingService(){
         int port = config().getInteger("http.port", 8080);

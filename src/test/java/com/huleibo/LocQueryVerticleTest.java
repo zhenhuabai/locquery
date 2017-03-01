@@ -47,12 +47,9 @@ public class LocQueryVerticleTest {
         System.out.println("getting:"+val);
         vertx.createHttpClient().getNow(port, "localhost", val,
                 response -> {
-                    response.handler(body -> {
-                        System.out.println("result-->:"+body.toString());
-                        JsonObject res = body.toJsonObject();
-                        context.assertTrue(body.toJsonObject().getString("result") != null);
-                        async.complete();
-                    });
+                    context.assertTrue(response.statusCode()==400);
+                    context.assertTrue(response.statusMessage().contains("error"));
+                    async.complete();
                 });
     }
     @Test
@@ -203,7 +200,7 @@ public class LocQueryVerticleTest {
         JsonObject jo = new JsonObject();
         jo.put("uid",20001);
         jo.put("lat",38.01);
-        jo.put("lon",128.2);
+        jo.put("lon",118.2);
         jo.put("timestamp",System.currentTimeMillis());
         String val = jo.encode();
         System.out.println("posting:"+val);
@@ -211,7 +208,7 @@ public class LocQueryVerticleTest {
                 response -> {
                     response.handler(body -> {
                         System.out.println("response 2:"+body.toString());
-                        context.assertTrue(body.toJsonObject().getString("result").contains("error"));
+                        context.assertTrue(body.toJsonObject().getString("result").contains("OK"));
                         async.complete();
                     });
                 })
