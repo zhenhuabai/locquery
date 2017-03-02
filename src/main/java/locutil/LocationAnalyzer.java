@@ -39,30 +39,55 @@ public final class LocationAnalyzer {
     private long pastDays = 90;//TODO: read config
     private final long DEFAULT_PASTDAYS = 30;
     private double threshold_precentage = 0.0;//TODO: read config
+    private static final int MILILIESINMINUTE = 60 * 1000;
+    private int scaninterval = 10 * MILILIESINMINUTE;
+    private static final String KEY_SCAN = "scaninterval";
+    private static final String KEY_ANALYZER = "locationanalyzer";
+    private static final String KEY_THRESHOLD = "thresholdpercentage";
+    private static final String KEY_PASTDAYS = "pastdays";
     private LocationAnalyzer(){
         JSONObject jo = Config.getInstance().getLocationManagerConfig();
-        JSONObject lz = (JSONObject)jo.get("locationanalyzer");
-        pastDays = Integer.parseInt(lz.get("pastdays").toString());
-        if(pastDays < 0 ){
-            pastDays = DEFAULT_PASTDAYS;
+        JSONObject lz = (JSONObject)jo.get(LocationAnalyzer.KEY_ANALYZER);
+        pastDays = DEFAULT_PASTDAYS;
+        try {
+            pastDays = Integer.parseInt(lz.get(LocationAnalyzer.KEY_PASTDAYS).toString());
+            if (pastDays < 0) {
+                pastDays = DEFAULT_PASTDAYS;
+            }
+        }catch (NumberFormatException e){
         }
-        if(!lz.containsKey("thresholdpercentage")){
-            threshold_precentage = 0;
-        } else {
-            String threasholdS = lz.get("thresholdpercentage").toString();
+        threshold_precentage = 0;
+        if(lz.containsKey(LocationAnalyzer.KEY_THRESHOLD)){
+            String threasholdS = lz.get(LocationAnalyzer.KEY_THRESHOLD).toString();
             //0 is allowed, which lets the city with minimal occurrence appear in local list
-            threshold_precentage = Double.parseDouble(threasholdS);
-            if (threshold_precentage < 0 || threshold_precentage > 1) {
-                threshold_precentage = 0;
+            try{
+                threshold_precentage = Double.parseDouble(threasholdS);
+                if (threshold_precentage < 0 || threshold_precentage > 1) {
+                    threshold_precentage = 0;
+                }
+            }catch (NumberFormatException e){
             }
         }
-        logger.info("initializing location analyzer with threshold = "+threshold_precentage+ " and days="+pastDays );
+        if(lz.containsKey(LocationAnalyzer.KEY_SCAN)){
+            String interval = lz.get(LocationAnalyzer.KEY_SCAN).toString();
+            //0 is allowed, which lets the city with minimal occurrence appear in local list
+            try{
+                scaninterval = Integer.parseInt(interval);
+                if (scaninterval < 1) {
+                    scaninterval = 1;
+                }
+                scaninterval *= MILILIESINMINUTE;
+            }catch (NumberFormatException e){
+            }
+        }
+        logger.info("initializing location analyzer with threshold = "+threshold_precentage+ " and days="+pastDays
+                +" interval="+scaninterval/MILILIESINMINUTE+ "/minute");
     }
     private Timer localLocationTimer = new Timer("LocalLocation_Analyzer");
-    private final static long LOCALLOCATIONANALYZE_INTERVAL = 10 * 60 * 1000;//10 minutes should be fine
-    public static final void startLocalLocation(MongoClient client){
+    private static long LOCALLOCATIONANALYZE_INTERVAL = 10 * 60 * 1000;//10 minutes should be fine
+    public final void startLocalLocation(MongoClient client){
         LocationAnalyzer.getInstance().startLocalLocationAnalyzer(client,
-                LOCALLOCATIONANALYZE_INTERVAL);
+                scaninterval);
     }
     private final void startLocalLocationAnalyzer(MongoClient client, long period){
         this.client = client;

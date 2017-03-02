@@ -5,7 +5,8 @@
     "database": "db4buildandtest",
     "locationanalyzer" : {
       "pastdays":90,
-      "thresholdpercentage": 0.2
+      "thresholdpercentage": 0.2,
+      "scaninterval":10
     }
   },
   "weather" : {

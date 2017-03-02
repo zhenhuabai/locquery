@@ -56,7 +56,7 @@ public class LocationManager extends LocApp {
         vertx.executeBlocking(future -> {
             logger.debug("initializing mongoclient and commands");
             mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
-            LocationAnalyzer.startLocalLocation(mongoClient);
+            LocationAnalyzer.getInstance().startLocalLocation(mongoClient);
             installCommandHandler();
             Set<String> keys = cmdDispatcher.keySet();
             keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});
@@ -75,7 +75,7 @@ public class LocationManager extends LocApp {
         if(!initialized) {
             vertx.executeBlocking(future -> {
                 mongoClient = MongoDbHelper.getInstance().requestClient(vertx);
-                LocationAnalyzer.startLocalLocation(mongoClient);
+                LocationAnalyzer.getInstance().startLocalLocation(mongoClient);
                 installCommandHandler();
                 Set<String> keys = cmdDispatcher.keySet();
                 keys.forEach(s ->{ logger.debug("installed cmd-->"+s);});

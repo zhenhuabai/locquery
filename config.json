@@ -5,7 +5,8 @@
     "database": "locquery",
     "locationanalyzer" : {
       "pastdays":90,
-      "thresholdpercentage": 0.2
+      "thresholdpercentage": 0.2,
+      "scaninterval": 2
     }
   },
   "weather" : {

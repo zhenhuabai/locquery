@@ -22,7 +22,7 @@ public class LocationAnalyzerTest {
     private Vertx vertx;
     @Test
     public void startLocalLocation() throws Exception {
-        LocationAnalyzer.startLocalLocation(client);
+        LocationAnalyzer.getInstance().startLocalLocation(client);
         //let's assume analyzer finishes in 5 seconds
         Thread.sleep(5*1000);
         LocationAnalyzer.stopLocalLocation();
