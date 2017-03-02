@@ -362,7 +362,7 @@ public class LocationManager extends LocApp {
                             if (historyCities.succeeded()) {
                                 JsonArray citylist = historyCities.result().getJsonArray("result");
                                 logger.debug("history city info:"+citylist.toString());
-                                boolean isnonlocal = false;
+                                boolean islocal = false;
                                 search_qualified_history:
                                 for (Object c : citylist) {
                                     JsonObject acity = (JsonObject) c;
@@ -373,7 +373,7 @@ public class LocationManager extends LocApp {
                                         String langcityS = cityinfo.getString(supportedLang[i]);
                                         String langcityFoundS = foundcity.getString(supportedLang[i]);
                                         if(langcityFoundS.equals(langcityS)){
-                                            isnonlocal = true;
+                                            islocal = true;
                                             break search_qualified_history;
                                         }
                                         /*
@@ -393,7 +393,8 @@ public class LocationManager extends LocApp {
                                         */
                                     }
                                 }
-                                JsonObject rslt = new JsonObject().put("result", "OK").put("data",isnonlocal);
+                                //we are checking non-local, reverse the result
+                                JsonObject rslt = new JsonObject().put("result", "OK").put("data",!islocal);
                                 dbResult.complete(rslt);
                             } else {
                                 logger.error("Problem searching in location history");
